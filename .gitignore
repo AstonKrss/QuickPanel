@@ -5,6 +5,8 @@ publish/
 *.user
 *.suo
 
+# 注意：dist/ 目录刻意不忽略 —— 存放预编译的 QuickPanel.exe 供直接下载
+
 # Visual Studio / Rider
 .vs/
 .idea/
