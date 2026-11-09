@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
@@ -98,7 +99,8 @@ public class GroupVM : INotifyPropertyChanged
 
     public void RemoveItem(ItemVM item)
     {
-        Items.Remove(item);
+        // v1.7：先确认真的在这个分组里，再清 OwnerGroup（否则搜索结果会误清归属）
+        if (!Items.Remove(item)) return;
         Model.Items.Remove(item.Model);
         item.OwnerGroup = null;
     }
@@ -138,12 +140,15 @@ public class MainViewModel : INotifyPropertyChanged
         if (Store.FirstRun || Store.Config.Groups.Count == 0)
             FirstRunSeeder.Seed(Store.Config);
 
-        // F44：非首运但 Dock 钉选为空时自动播种（沿用分组前几项）
-        if (!Store.FirstRun && Store.Config.DockPins.Count == 0)
+        // F44：非首运但 Dock 钉选为空时自动播种（v1.7：仅首次，用户清空后不再回填）
+        if (!Store.FirstRun && !Store.Config.Settings.DockSeeded && Store.Config.DockPins.Count == 0)
         {
             foreach (var item in Store.Config.Groups.SelectMany(g => g.Items).Take(6))
                 Store.Config.DockPins.Add(item);
         }
+        // 已有钉选或已完成播种 → 标记，避免清空后重启又被填回
+        if (Store.Config.DockPins.Count > 0 || Store.FirstRun)
+            Store.Config.Settings.DockSeeded = true;
 
         foreach (var group in Store.Config.Groups)
             Groups.Add(new GroupVM(group, Icons));
@@ -165,7 +170,7 @@ public class MainViewModel : INotifyPropertyChanged
     public void LaunchItem(ItemVM item, bool asAdmin = false)
         => Launcher.Launch(item.Model, asAdmin);
 
-    /// <summary>F3：拖入文件加入当前分组并立即持久化。</summary>
+    /// <summary>F3：拖入文件加入当前分组并立即持久化（v1.7：同目标去重）。</summary>
     public void AddToCurrentGroup(IEnumerable<string> paths)
     {
         var group = SelectedGroup;
@@ -174,14 +179,43 @@ public class MainViewModel : INotifyPropertyChanged
         {
             var item = ShortcutParser.Parse(path);
             if (item is null) continue;
+            if (group.Items.Any(i => string.Equals(i.Model.Target, item.Target, StringComparison.OrdinalIgnoreCase)))
+                continue; // v1.7：重复拖入不再产生重复条目
             group.AddItem(new ItemVM(item, Icons));
         }
         SaveConfig();
     }
 
+    /// <summary>v1.7：手动添加条目（文件/文件夹/网址）。</summary>
+    public bool AddItem(string name, string target, ItemKind kind)
+    {
+        var group = SelectedGroup;
+        if (group is null || string.IsNullOrWhiteSpace(target)) return false;
+        if (group.Items.Any(i => string.Equals(i.Model.Target, target, StringComparison.OrdinalIgnoreCase)))
+            return false;
+
+        var model = new LaunchItem
+        {
+            Name = string.IsNullOrWhiteSpace(name) ? target : name.Trim(),
+            Target = target.Trim(),
+            Kind = kind,
+            WorkDir = File.Exists(target) ? (Path.GetDirectoryName(target) ?? "") : "",
+        };
+        group.AddItem(new ItemVM(model, Icons));
+        SaveConfig();
+        return true;
+    }
+
     public void RemoveFromCurrentGroup(ItemVM item)
     {
         SelectedGroup?.RemoveItem(item);
+        SaveConfig();
+    }
+
+    /// <summary>v1.7：按条目真实归属移除（搜索结果场景）。</summary>
+    public void RemoveFromOwnGroup(ItemVM item)
+    {
+        item.OwnerGroup?.RemoveItem(item);
         SaveConfig();
     }
 

@@ -26,6 +26,9 @@ public class AppSettings
     /// <summary>v1.4：Dock 仅在桌面显示——打开其他软件时自动隐藏。</summary>
     public bool DockDesktopOnly { get; set; } = true;
 
+    /// <summary>v1.7：Dock 是否已播种过。用户清空钉选后不再自动回填。</summary>
+    public bool DockSeeded { get; set; }
+
     /// <summary>v0.8：设置窗口主题 dark / light。</summary>
     public string SettingsTheme { get; set; } = "dark";
 

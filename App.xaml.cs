@@ -51,7 +51,19 @@ public partial class App : Application
         WinForms.Application.EnableVisualStyles();
 
         _store = new ConfigStore();
-        _store.Load();
+        try
+        {
+            _store.Load();
+        }
+        catch (IOException ex)
+        {
+            // v1.7：配置文件被占用/无权限 —— 不覆盖用户数据，提示后退出
+            MessageBox.Show(
+                $"无法读取配置文件（可能被其他程序占用）：\n{ConfigStore.ConfigPath}\n\n{ex.Message}\n\n请关闭占用程序后重试。",
+                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+            return;
+        }
         _vm = new MainViewModel(_store);
         _vm.LoadFromConfig();
         _vm.SaveConfig(); // 首运播种 / 迁移后立即持久化（F3/F43/F44）
@@ -64,6 +76,7 @@ public partial class App : Application
         _panel = new PanelWindow(_vm);
         _dock = new DockBarWindow(_vm, ShowPanel, OpenSettings);
         _panel.SetDock(_dock);
+        _panel.ApplyScale(); // v1.7：启动即应用保存的面板缩放（此前重启后失效）
         _dock.Opacity = _store.Config.Settings.Opacity;
 
         _hotkeys = new HotkeyService();

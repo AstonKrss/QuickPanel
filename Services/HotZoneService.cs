@@ -42,6 +42,8 @@ public class HotZoneService
 
     private bool _hiddenForDesktop;
     private DateTime _bottomHoverSince = DateTime.MinValue;
+    /// <summary>v1.7：面板显示后光标是否进入过面板 —— 未进入过则不启动自动收回计时。</summary>
+    private bool _cursorEnteredPanel;
 
     /// <summary>底部热区高度（px）：鼠标进入屏幕底部这个范围内，Dock 浮现。</summary>
     private const int BottomRevealBand = 60;
@@ -151,11 +153,11 @@ public class HotZoneService
             var overDock = InRect(cursor, dockRect, inflate: 4) && CursorHits(cursor, dock.GetHwnd());
 
             // F31：悬停 Dock ≥ HotZoneMs 唤出面板（v0.8：仅分组按钮上触发，悬停图钉不弹窗）
-            if (overDock && !panel.IsVisible)
+            // v1.7：计时只在"光标确实在分组按钮上"时累加，避免停在图钉/齿轮上再滑过去就秒开
+            if (overDock && !panel.IsVisible && dock.IsOverGroupButton(cursor))
             {
                 if (_dockHoverSince == DateTime.MinValue) _dockHoverSince = DateTime.Now;
-                if ((DateTime.Now - _dockHoverSince).TotalMilliseconds >= HotZoneMs()
-                    && dock.IsOverGroupButton(cursor))
+                if ((DateTime.Now - _dockHoverSince).TotalMilliseconds >= HotZoneMs())
                 {
                     dock.SelectGroupUnderCursor(); // F21 v0.5：悬停哪个分组按钮就定位哪个分组
                     panel.ShowPanel();
@@ -163,12 +165,24 @@ public class HotZoneService
                 ResetOutside();
                 return;
             }
+            if (!overDock || !dock.IsOverGroupButton(cursor))
+                ResetHover();
 
             ResetHover();
 
             if (!panel.IsVisible) return;
 
             var outside = !overDock && !InRect(cursor, panel.GetScreenRect());
+
+            // v1.7：热键/托盘唤出时鼠标从未进入面板 —— 不能因为"鼠标在外面"就收回
+            // （此前 Alt+Q 打开后 300ms 立即消失，用户根本来不及操作）
+            if (!outside) _cursorEnteredPanel = true;
+            if (!_cursorEnteredPanel)
+            {
+                ResetOutside();
+                return;
+            }
+
             if (outside)
             {
                 if (_outsideSince == DateTime.MinValue) _outsideSince = DateTime.Now;
@@ -176,6 +190,7 @@ public class HotZoneService
                 if (delay <= 0 || (DateTime.Now - _outsideSince).TotalMilliseconds >= delay)
                 {
                     panel.HidePanel();
+                    _cursorEnteredPanel = false; // v1.7：下次唤出重新判定
                     ResetOutside();
                 }
             }

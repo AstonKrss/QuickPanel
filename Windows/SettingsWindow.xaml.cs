@@ -82,6 +82,18 @@ public partial class SettingsWindow : Window
         {
             if (args.Key == Key.Escape) Close();
         };
+        // v1.7：无论 Done / Esc / X 关闭，都持久化（此前 Esc/X 会丢失全部改动）
+        Closed += (_, _) =>
+        {
+            try
+            {
+                _vm.Store.Config.Settings.Opacity = Math.Round(OpacitySlider.Value, 2);
+                _vm.Store.Config.Settings.DockAutoHide = FullscreenHideCheck.IsChecked == true;
+                _vm.Store.Config.Settings.DockDesktopOnly = DockDesktopOnlyCheck.IsChecked == true;
+                _vm.SaveConfig();
+            }
+            catch { /* 关闭期保存失败不阻塞退出 */ }
+        };
         SourceInitialized += (_, _) =>
             Acrylic.ApplyDialogTheme(new WindowInteropHelper(this).Handle, dark: !_isLight);
 
@@ -107,6 +119,7 @@ public partial class SettingsWindow : Window
         {
             var value = Math.Round(OpacitySlider.Value, 2);
             OpacityValueText.Text = $"{value * 100:0}%";
+            if (!_initializing) settings.Opacity = value; // v1.7：写回配置，否则重开面板读旧值
             _opacityChanged(value); // F52：实时预览
         };
 
@@ -116,6 +129,16 @@ public partial class SettingsWindow : Window
             var scale = Math.Round(PanelScaleSlider.Value, 2);
             PanelScaleText.Text = $"{scale * 100:0}%";
             settings.PanelScale = Math.Clamp(scale, 0.8, 1.4);
+            _layoutChanged();
+        };
+
+        // v1.7：图标大小滑块此前完全没有接线（拖动无任何效果）
+        IconScaleSlider.ValueChanged += (_, _) =>
+        {
+            if (_initializing) return;
+            var scale = Math.Round(IconScaleSlider.Value, 2);
+            IconScaleText.Text = $"{scale * 100:0}%";
+            settings.IconScale = Math.Clamp(scale, 0.6, 1.6);
             _layoutChanged();
         };
 

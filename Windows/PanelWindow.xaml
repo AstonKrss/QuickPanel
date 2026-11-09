@@ -13,7 +13,8 @@
     <Border x:Name="RootBorder" CornerRadius="12"
             Background="{DynamicResource SurfaceOverlayBrush}"
             BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
-            AllowDrop="True" DragOver="Root_DragOver" DragLeave="Root_DragLeave" Drop="Root_Drop">
+            AllowDrop="True" DragOver="Root_DragOver" DragLeave="Root_DragLeave" Drop="Root_Drop"
+            MouseRightButtonUp="Root_RightClick">
         <Border.RenderTransform>
             <TransformGroup>
                 <ScaleTransform x:Name="RootScale" CenterX="380" CenterY="220"/>

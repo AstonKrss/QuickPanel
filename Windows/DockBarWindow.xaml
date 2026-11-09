@@ -72,6 +72,8 @@
                                 </Style>
                             </Border.Style>
                             <TextBlock x:Name="GroupText" Text="{Binding Name}" FontSize="13"
+                                       MaxWidth="110" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Name}"
                                        Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Border>
                     </DataTemplate>

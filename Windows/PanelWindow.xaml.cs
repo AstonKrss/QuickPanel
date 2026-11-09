@@ -22,6 +22,7 @@ public partial class PanelWindow : Window
     private bool _hiding;
     private bool _transparent;
     private bool _oleDragging;
+    private int _suppressHide; // v1.7：子对话框/菜单打开时抑制自动隐藏
     private readonly Dictionary<Border, Point> _dragAnchors = new();
 
     public PanelWindow(MainViewModel vm)
@@ -40,6 +41,8 @@ public partial class PanelWindow : Window
         // F31 v0.8：点击其他窗口（面板失活）→ 立即收回；光标仍在 Dock 上除外
         Deactivated += (_, _) =>
         {
+            // v1.7：打开子对话框/右键菜单/消息框时不收回（否则重命名时面板会消失）
+            if (_suppressHide > 0) return;
             try
             {
                 if (_dock is { IsVisible: true })
@@ -52,6 +55,23 @@ public partial class PanelWindow : Window
             }
             catch { /* 检测失败按隐藏处理 */ }
             HidePanel();
+        };
+
+        // v1.7：全局 Esc / Enter（不依赖搜索框焦点）
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape)
+            {
+                if (SearchBox.Text.Length > 0) SearchBox.Clear();
+                else HidePanel();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && SearchBox.Text.Trim().Length > 0)
+            {
+                if (SearchResults.Items.Count > 0 && SearchResults.Items[0] is ItemVM first)
+                    LaunchAndClose(first);
+                e.Handled = true;
+            }
         };
 
         SourceInitialized += (_, _) =>
@@ -106,6 +126,14 @@ public partial class PanelWindow : Window
             try { Activate(); }
             catch { /* 激活失败不影响显示 */ }
             Topmost = true;
+            // v1.7：打开即聚焦搜索框，可直接打字
+            try
+            {
+                SearchBox.Focus();
+                Keyboard.Focus(SearchBox);
+                SearchBox.SelectAll();
+            }
+            catch { /* 聚焦失败不影响使用 */ }
         }));
         PlayOpen();
     }
@@ -114,6 +142,12 @@ public partial class PanelWindow : Window
     {
         if (!IsVisible || _hiding) return;
         _hiding = true;
+        // v1.7：关闭时清空搜索，下次打开是干净状态
+        try
+        {
+            if (SearchBox.Text.Length > 0) SearchBox.Clear();
+        }
+        catch { /* 忽略 */ }
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         RootScale.BeginAnimation(ScaleTransform.ScaleXProperty,
             new DoubleAnimation(0.94, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
@@ -405,15 +439,30 @@ public partial class PanelWindow : Window
         rename.Click += (_, _) =>
         {
             var light = string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
-            var name = InputDialog.Show(this, $"重命名「{item.Name}」", item.Name, light);
+            string? name;
+            _suppressHide++; // v1.7：对话框打开期间不收回面板
+            try
+            {
+                name = InputDialog.Show(this, $"重命名「{item.Name}」", item.Name, light);
+            }
+            finally
+            {
+                _suppressHide--;
+            }
             if (!string.IsNullOrWhiteSpace(name) && name != item.Name)
                 item.Name = name;
             _vm.SaveConfig();
         };
         menu.Items.Add(rename);
 
-        var remove = new MenuItem { Header = "从分组移除" };
-        remove.Click += (_, _) => _vm.RemoveFromCurrentGroup(item);
+        var remove = new MenuItem
+        {
+            // v1.7：按真实归属显示/执行（搜索结果可能来自其他分组）
+            Header = item.OwnerGroup != null && !ReferenceEquals(item.OwnerGroup, _vm.SelectedGroup)
+                ? $"从「{item.OwnerGroup.Name}」移除"
+                : "从分组移除",
+        };
+        remove.Click += (_, _) => _vm.RemoveFromOwnGroup(item);
         menu.Items.Add(remove);
 
         menu.IsOpen = true;
@@ -448,5 +497,53 @@ public partial class PanelWindow : Window
         Root_DragLeave(sender, e);
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
             _vm.AddToCurrentGroup(files);
+    }
+
+    /// <summary>v1.7：面板空白处右键 → 添加条目 / 新建分组。</summary>
+    private void Root_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        // 只在空白处触发（图标有自己的菜单）
+        if (e.OriginalSource is FrameworkElement fe && fe.Tag is ItemVM) return;
+
+        var menu = new ContextMenu { PlacementTarget = this, Placement = PlacementMode.MousePoint };
+
+        var add = new MenuItem { Header = "添加条目…", FontWeight = FontWeights.SemiBold };
+        add.Click += (_, _) => ShowAddItemDialog();
+        menu.Items.Add(add);
+
+        var newGroup = new MenuItem { Header = "新建分组…" };
+        newGroup.Click += (_, _) =>
+        {
+            var light = string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
+            _suppressHide++;
+            try
+            {
+                var name = InputDialog.Show(this, "新分组名称（如：网安 / 游戏 / 剪辑）", "", light);
+                if (!string.IsNullOrWhiteSpace(name)) _vm.AddGroup(name);
+            }
+            finally { _suppressHide--; }
+        };
+        menu.Items.Add(newGroup);
+
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    /// <summary>v1.7：添加条目对话框。</summary>
+    private void ShowAddItemDialog()
+    {
+        var light = string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
+        _suppressHide++;
+        try
+        {
+            var result = AddItemDialog.Show(this, light);
+            if (result is { } r)
+            {
+                if (!_vm.AddItem(r.Name, r.Target, r.Kind))
+                    MessageBox.Show("该目标已存在于当前分组。", "QuickPanel",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        finally { _suppressHide--; }
     }
 }
