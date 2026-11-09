@@ -189,6 +189,12 @@ public partial class DockBarWindow : Window
         ContentScale.ScaleX = scale;
         ContentScale.ScaleY = scale;
         _plate = settings.DockIconPlate;
+
+        // v1.5：顶部余量跟随缩放 —— 图钉悬停放大 1.32x + 上浮 8px 的视觉溢出量
+        // 溢出 = 44·s·0.32/2 + 8·s = 15.04·s（s=图标缩放），减去 RootBorder 自带 padding 7px
+        var headroom = Math.Max(12, 15.04 * scale - 7 + 4); // +4 安全余量（DPI 取整）
+        RootBorder.Margin = new Thickness(0, Math.Round(headroom), 0, 2);
+
         RebuildPinVisuals();
 
         if (settings.DockPositionMode == "free")

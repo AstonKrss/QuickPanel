@@ -11,15 +11,15 @@
     </WindowChrome.WindowChrome>
 
     <!-- F20：常驻透明长条（v0.5：背景模式毛玻璃/全透明可切换） -->
-    <!-- 顶部隐形余量：防图钉放大被窗口边界裁切；12px 为 111% 缩放下的最低值（像素实测该区域渲染为零） -->
+    <!-- 顶部余量由代码按图标缩放动态计算（v1.5），确保悬停放大不被窗口边界裁切 -->
     <Border x:Name="RootBorder" CornerRadius="16" Margin="0,12,0,2"
             Background="{DynamicResource SurfaceOverlayBrush}"
             BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
-            Padding="10,7" AllowDrop="True"
+            Padding="10,7" AllowDrop="True" ClipToBounds="False"
             DragOver="Dock_DragOver" DragLeave="Dock_DragLeave" Drop="Dock_Drop"
             MouseMove="Dock_MouseMove"
             MouseLeftButtonDown="Root_Down" MouseRightButtonUp="Root_RightClick">
-        <StackPanel x:Name="DockContent" Orientation="Horizontal">
+        <StackPanel x:Name="DockContent" Orientation="Horizontal" ClipToBounds="False">
             <StackPanel.LayoutTransform>
                 <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1"/>
             </StackPanel.LayoutTransform>
@@ -75,12 +75,18 @@
             <Border Width="1" Margin="10,0" Background="{DynamicResource HairlineBrush}"/>
 
             <!-- F22/F23：钉选图标 + 弹钢琴放大（v0.5 支持拖出） -->
-            <ItemsControl x:Name="PinHost" ItemsSource="{Binding DockPins}" VerticalAlignment="Center">
+            <ItemsControl x:Name="PinHost" ItemsSource="{Binding DockPins}" VerticalAlignment="Center"
+                          ClipToBounds="False">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal"/>
+                        <StackPanel Orientation="Horizontal" ClipToBounds="False"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="ClipToBounds" Value="False"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <!-- F23 v0.8：悬停放大 1.32x + 上浮（Enter/Leave 动画，底板样式由代码控制） -->
