@@ -65,6 +65,13 @@ public partial class DockBarWindow : Window
             if (PinHost.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
                 RebuildPinVisuals();
         };
+        // v1.3：分组按钮是独立 ItemsControl，容器生成时机不同 —— 必须单独监听，
+        // 否则 ApplyBareText 跑在容器生成前，分组文字拿不到 TextBlock（一直保持浅灰）
+        GroupButtons.ItemContainerGenerator.StatusChanged += (_, _) =>
+        {
+            if (GroupButtons.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
+                ApplyBareText();
+        };
 
         SourceInitialized += (_, _) =>
         {
@@ -209,32 +216,29 @@ public partial class DockBarWindow : Window
     private void ApplyBareText()
     {
         var bare = !_plate;
+        // v1.3：纯图标模式用不透明纯黑 + 加粗，不用 Effect
+        // （DropShadowEffect 会整体降低文字不透明度，白色描光在亮背景上反而把黑字洗灰）
         var textBrush = bare
-            ? new SolidColorBrush(Color.FromArgb(0xE6, 0x14, 0x14, 0x18))
+            ? new SolidColorBrush(Colors.Black)
             : (Brush)FindResource("TextPrimaryBrush");
-        Effect? glow = null;
-        if (bare)
-        {
-            glow = new DropShadowEffect
-            {
-                Color = Colors.White,
-                BlurRadius = 4,
-                ShadowDepth = 0,
-                Opacity = 0.95,
-            };
-        }
 
         GripText.Foreground = textBrush;
-        GripText.Effect = glow;
+        GripText.Effect = null;
+        GripText.FontWeight = bare ? FontWeights.Bold : FontWeights.Normal;
         GearText.Foreground = textBrush;
-        GearText.Effect = glow;
+        GearText.Effect = null;
 
         for (var i = 0; i < GroupButtons.Items.Count; i++)
         {
             if (GroupButtons.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement container) continue;
             if (FindDescendant<TextBlock>(container) is not { } tb) continue;
             tb.Foreground = textBrush;
-            tb.Effect = glow;
+            tb.Effect = null;
+            if (bare)
+            {
+                tb.FontWeight = FontWeights.Bold;
+                tb.FontSize = 14;
+            }
 
             // v1.2：纯图标模式下分组按钮也不能有底板——之前漏掉，是"还有一圈框"的真正来源
             if (bare && FindDescendant<Border>(container) is { } plateBorder)
