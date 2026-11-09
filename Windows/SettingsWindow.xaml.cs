@@ -60,6 +60,8 @@ public partial class SettingsWindow : Window
         DockTopmostCheck.IsChecked = settings.DockTopmost;
         PlateRadio.IsChecked = settings.DockIconPlate;
         BareRadio.IsChecked = !settings.DockIconPlate;
+        DockTextColorBox.Text = settings.DockTextColor;
+        DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
         IconScaleSlider.Value = Math.Clamp(settings.IconScale, 0.6, 1.6);
         IconScaleText.Text = $"{Math.Clamp(settings.IconScale, 0.6, 1.6) * 100:0}%";
         PanelScaleSlider.Value = Math.Clamp(settings.PanelScale, 0.8, 1.4);
@@ -127,6 +129,7 @@ public partial class SettingsWindow : Window
 
         SurfaceColorBox.TextChanged += (_, _) => ApplyColor(SurfaceColorBox, isAccent: false);
         AccentColorBox.TextChanged += (_, _) => ApplyColor(AccentColorBox, isAccent: true);
+        DockTextColorBox.TextChanged += (_, _) => ApplyDockTextColor();
 
         GroupEditList.SelectionChanged += (_, _) =>
         {
@@ -174,6 +177,31 @@ public partial class SettingsWindow : Window
         if (parts.Length != 2) return;
         if (parts[0] == "surface") SurfaceColorBox.Text = parts[1];
         else if (parts[0] == "accent") AccentColorBox.Text = parts[1];
+        else if (parts[0] == "docktext") DockTextColorBox.Text = parts[1];
+    }
+
+    /// <summary>v1.4：Dock 文字颜色实时生效。</summary>
+    private void ApplyDockTextColor()
+    {
+        if (_initializing) return;
+        var hex = DockTextColorBox.Text.Trim();
+        if (hex.Length == 0) return;
+        try
+        {
+            _ = (Color)ColorConverter.ConvertFromString(hex);
+        }
+        catch
+        {
+            return;
+        }
+        _vm.Store.Config.Settings.DockTextColor = hex;
+        _layoutChanged();
+    }
+
+    private void DockDesktopOnly_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        _vm.Store.Config.Settings.DockDesktopOnly = DockDesktopOnlyCheck.IsChecked == true;
     }
 
     // ---------- 分区导航（v0.9）----------
@@ -261,6 +289,8 @@ public partial class SettingsWindow : Window
         settings.DockY = 0;
         settings.DockTopmost = false;
         settings.DockIconPlate = true;
+        settings.DockTextColor = "#000000";
+        settings.DockDesktopOnly = true;
 
         _initializing = true;
         ModeAcrylicRadio.IsChecked = false;
@@ -275,6 +305,8 @@ public partial class SettingsWindow : Window
         DockTopmostCheck.IsChecked = false;
         PlateRadio.IsChecked = true;
         BareRadio.IsChecked = false;
+        DockTextColorBox.Text = settings.DockTextColor;
+        DockDesktopOnlyCheck.IsChecked = true;
         _initializing = false;
 
         _appearanceChanged();

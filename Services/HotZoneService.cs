@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Threading;
 using QuickPanel.Windows;
 
@@ -21,6 +22,9 @@ public class HotZoneService
     [DllImport("shell32.dll")]
     private static extern int SHQueryUserNotificationState(out QUERY_USER_NOTIFICATION_STATE state);
 
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
     private const int OutsideHideMs = 300; // F31 v0.9：默认 300ms（HideDelayMs 可调）
 
     public PanelWindow? Panel { get; set; }
@@ -32,6 +36,15 @@ public class HotZoneService
 
     /// <summary>F31 v0.8：离开面板+Dock 后自动收回延迟（ms）。</summary>
     public Func<int> HideDelayMs { get; set; } = () => 600;
+
+    /// <summary>v1.4：Dock 智能自动隐藏——平时隐藏，鼠标碰底部区域浮现。</summary>
+    public Func<bool> DesktopOnly { get; set; } = () => true;
+
+    private bool _hiddenForDesktop;
+    private DateTime _bottomHoverSince = DateTime.MinValue;
+
+    /// <summary>底部热区高度（px）：鼠标进入屏幕底部这个范围内，Dock 浮现。</summary>
+    private const int BottomRevealBand = 60;
 
     private readonly DispatcherTimer _timer;
     private DateTime _dockHoverSince = DateTime.MinValue;
@@ -79,6 +92,60 @@ public class HotZoneService
             }
 
             if (!Win32.GetCursorPos(out var cursor)) return;
+
+            // v1.4：智能自动隐藏 —— 非桌面时隐藏 Dock；鼠标碰底部区域则浮现
+            if (DesktopOnly())
+            {
+                var onDesktop = IsDesktopForeground();
+                if (!onDesktop)
+                {
+                    // 光标是否在屏幕底部热区（不依赖窗口命中，Dock 隐藏时也能触发）
+                    var wa = SystemParameters.WorkArea;
+                    var nearBottom = cursor.Y >= wa.Bottom - BottomRevealBand
+                                     && cursor.X >= wa.Left && cursor.X <= wa.Right;
+
+                    if (nearBottom)
+                    {
+                        if (_bottomHoverSince == DateTime.MinValue) _bottomHoverSince = DateTime.Now;
+                        // 停 120ms 才浮现，避免鼠标扫过底部时闪一下
+                        if ((DateTime.Now - _bottomHoverSince).TotalMilliseconds >= 120 && _hiddenForDesktop)
+                        {
+                            _hiddenForDesktop = false;
+                            dock.RestoreFromDesktop();
+                        }
+                    }
+                    else
+                    {
+                        _bottomHoverSince = DateTime.MinValue;
+                        if (!_hiddenForDesktop)
+                        {
+                            _hiddenForDesktop = true;
+                            if (panel.IsVisible) panel.HidePanel();
+                            dock.CollapseForDesktop();
+                        }
+                    }
+
+                    if (!dock.IsVisible)
+                    {
+                        ResetHover();
+                        ResetOutside();
+                        return;
+                    }
+                }
+                else if (_hiddenForDesktop)
+                {
+                    // 回到桌面 → 立即恢复
+                    _hiddenForDesktop = false;
+                    _bottomHoverSince = DateTime.MinValue;
+                    dock.RestoreFromDesktop();
+                }
+            }
+            else if (_hiddenForDesktop)
+            {
+                _hiddenForDesktop = false;
+                dock.RestoreFromDesktop();
+            }
+
             var dockRect = dock.GetScreenRect();
             // v0.7：真实命中检测——几何矩形内 且 光标确实落在 Dock 窗口上（被其他窗口覆盖时不算悬停）
             var overDock = InRect(cursor, dockRect, inflate: 4) && CursorHits(cursor, dock.GetHwnd());
@@ -150,6 +217,27 @@ public class HotZoneService
         if (hit == IntPtr.Zero) return false;
         var root = Win32.GetAncestor(hit, Win32.GA_ROOT);
         return root == targetHwnd;
+    }
+
+    /// <summary>
+    /// v1.4：前台是否处于"桌面"状态。
+    /// 桌面窗口类名：Progman（Win10/11）、WorkerW（壁纸层）、Shell_TrayWnd（任务栏）、
+    /// 以及 QuickPanel 自己的窗口（Dock/面板/设置）。
+    /// </summary>
+    private bool IsDesktopForeground()
+    {
+        var hwnd = Win32.GetForegroundWindow();
+        if (hwnd == IntPtr.Zero) return true; // 无前台窗口时按桌面处理
+
+        var cls = Win32.ClassNameOf(hwnd);
+        if (cls is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd"
+            or "NotifyIconOverflowWindow" or "TopLevelWindowForOverflowXamlIsland")
+            return true;
+
+        // 自己的窗口（Dock / 面板 / 设置 / 输入框）也算桌面态，否则悬停 Dock 会把自己藏掉
+        var self = System.Diagnostics.Process.GetCurrentProcess().Id;
+        Win32.GetWindowThreadProcessId(hwnd, out var pid);
+        return pid == self;
     }
 
     private bool RectCoversMonitor(IntPtr hwnd)

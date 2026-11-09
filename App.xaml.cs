@@ -78,6 +78,7 @@ public partial class App : Application
             HotZoneMs = () => store!.Config.Settings.HotZoneMs,
             FullscreenHideEnabled = () => store!.Config.Settings.DockAutoHide, // F35 v0.6 开关
             HideDelayMs = () => store!.Config.Settings.PanelHideMs,            // F31 v0.8 收回延迟
+            DesktopOnly = () => store!.Config.Settings.DockDesktopOnly,        // v1.4 仅桌面显示
         };
 
         SetupTray();

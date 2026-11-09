@@ -294,6 +294,23 @@
                                 <RadioButton x:Name="PlateRadio" Content="带底板（胶囊亚克力）" GroupName="plate" Checked="Plate_Changed"/>
                                 <RadioButton x:Name="BareRadio" Content="纯图标（无底无框，直接悬浮）" GroupName="plate" Checked="Plate_Changed"/>
                             </StackPanel>
+                            <TextBlock Text="文字颜色 #RRGGBB（纯图标模式的分组名/手柄/齿轮）" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="DockTextColorBox" Height="30" VerticalContentAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource SwatchButton}" Background="#000000" Tag="docktext|#000000" Click="Swatch_Click" ToolTip="黑"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#FFFFFF" Tag="docktext|#FFFFFF" Click="Swatch_Click" ToolTip="白"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#7C6FFF" Tag="docktext|#7C6FFF" Click="Swatch_Click" ToolTip="紫"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#1A1A1A" Tag="docktext|#1A1A1A" Click="Swatch_Click" ToolTip="近黑"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#FFD54F" Tag="docktext|#FFD54F" Click="Swatch_Click" ToolTip="黄"/>
+                                </StackPanel>
+                            </Grid>
+                            <CheckBox x:Name="DockDesktopOnlyCheck" Content="仅在桌面显示（打开其他软件时自动隐藏）"
+                                      Margin="0,16,0,0" Click="DockDesktopOnly_Changed"/>
                             <TextBlock Text="图标大小" Margin="0,16,0,0"/>
                             <Grid Margin="0,6,0,0">
                                 <Grid.ColumnDefinitions>

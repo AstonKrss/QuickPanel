@@ -160,6 +160,27 @@ public partial class DockBarWindow : Window
         Show();
     }
 
+    // ---------- v1.4：仅在桌面显示 ----------
+
+    private bool _hiddenForDesktop;
+
+    /// <summary>打开其他软件时隐藏 Dock。</summary>
+    public void CollapseForDesktop()
+    {
+        if (!IsVisible) return;
+        _hiddenForDesktop = true;
+        Hide();
+    }
+
+    /// <summary>回到桌面时恢复 Dock。</summary>
+    public void RestoreFromDesktop()
+    {
+        if (!_hiddenForDesktop) return;
+        _hiddenForDesktop = false;
+        Reposition();
+        Show();
+    }
+
     /// <summary>F26：应用图标缩放与位置模式；initial=true 时恢复持久化的自由位置。</summary>
     public void ApplyLayout(bool initial = false)
     {
@@ -216,10 +237,10 @@ public partial class DockBarWindow : Window
     private void ApplyBareText()
     {
         var bare = !_plate;
-        // v1.3：纯图标模式用不透明纯黑 + 加粗，不用 Effect
-        // （DropShadowEffect 会整体降低文字不透明度，白色描光在亮背景上反而把黑字洗灰）
+        // v1.4：纯图标模式文字颜色由用户自定义（默认纯黑）
+        var custom = Theme.ParseColor(_vm.Store.Config.Settings.DockTextColor, Colors.Black);
         var textBrush = bare
-            ? new SolidColorBrush(Colors.Black)
+            ? new SolidColorBrush(custom)
             : (Brush)FindResource("TextPrimaryBrush");
 
         GripText.Foreground = textBrush;
