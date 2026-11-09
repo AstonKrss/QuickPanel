@@ -1,0 +1,18 @@
+<Application x:Class="QuickPanel.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <!-- 窗口全部手动创建（F32：面板随启动隐藏），生命周期由托盘控制 -->
+    <Application.Resources>
+        <!-- §9.2 视觉令牌（当前：暗色） -->
+        <SolidColorBrush x:Key="SurfaceOverlayBrush" Color="#C0151518"/>
+        <SolidColorBrush x:Key="SolidSurfaceBrush" Color="#F0151518"/>
+        <SolidColorBrush x:Key="CardBrush" Color="#2EFFFFFF"/>
+        <SolidColorBrush x:Key="CardSubtleBrush" Color="#1FFFFFFF"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFDCDDE2"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FFB9BDC7"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#7C6FFF"/>
+        <SolidColorBrush x:Key="SelectedBrush" Color="#3D7C6FFF"/>
+        <SolidColorBrush x:Key="HairlineBrush" Color="#33FFFFFF"/>
+    </Application.Resources>
+</Application>

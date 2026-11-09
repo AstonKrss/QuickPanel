@@ -1,0 +1,561 @@
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Shell;
+using System.Windows.Threading;
+using QuickPanel.Services;
+using QuickPanel.ViewModels;
+
+namespace QuickPanel.Windows;
+
+public partial class DockBarWindow : Window
+{
+    private readonly MainViewModel _vm;
+    private readonly Action _showPanel;
+    private readonly Action _openSettings;
+    private readonly List<(Border Border, UIElement Container)> _pinBorders = new();
+    private readonly Dictionary<Border, Point> _pinDragAnchors = new();
+    private bool _hiddenForFullscreen;
+    private bool _oleDragging;
+    private bool _transparent;
+    private bool _plate = true;
+    private bool _bare; // v0.9：纯图标模式（整条 Dock 无底无框）
+
+    public DockBarWindow(MainViewModel vm, Action showPanel, Action openSettings)
+    {
+        InitializeComponent();
+        _vm = vm;
+        _showPanel = showPanel;
+        _openSettings = openSettings;
+        DataContext = vm;
+        // v1.1：acrylic=毛玻璃背板；transparent/invisible=分层窗口
+        _transparent = !string.Equals(vm.Store.Config.Settings.BackgroundMode, "acrylic", StringComparison.OrdinalIgnoreCase);
+        _plate = vm.Store.Config.Settings.DockIconPlate;
+        _bare = !_plate; // v0.9：纯图标 = 整条 Dock 无底，需分层窗口
+        if (_transparent || _bare) AllowsTransparency = true;
+        // v1.1：透明/隐形模式下关闭 DWM 玻璃垫层——GlassFrameThickness=-1 会让整个窗口
+        // 矩形下垫一层玻璃膜（比壁纸亮/雾的"色差矩形"根源），分层透明不需要它
+        var chrome = WindowChrome.GetWindowChrome(this);
+        if (_transparent || _bare)
+        {
+            // v1.2：分层窗口彻底移除 WindowChrome —— 只要有 chrome，DWM 就可能画边框/玻璃
+            WindowChrome.SetWindowChrome(this, null);
+        }
+        else if (chrome != null)
+        {
+            chrome.GlassFrameThickness = new Thickness(0);
+        }
+        // F20 v0.7：默认不置顶（只在桌面层级显示），设置可开启
+        Topmost = vm.Store.Config.Settings.DockTopmost;
+
+        Loaded += (_, _) => { ApplyLayout(initial: true); RebuildPinVisuals(); };
+        SizeChanged += (_, _) => Reposition();
+        vm.DockPins.CollectionChanged += OnPinsChanged;
+        // ItemsSource 绑定晚于 Loaded 才填充（见 §6.3），以容器生成事件为准重建引用
+        PinHost.ItemContainerGenerator.StatusChanged += (_, _) =>
+        {
+            if (PinHost.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
+                RebuildPinVisuals();
+        };
+
+        SourceInitialized += (_, _) =>
+        {
+            var invisible = Theme.NearInvisible;
+
+            // v1.2：分层窗口（透明/隐形/纯图标）一律不碰 DWM 属性——
+            // CAPTION/BORDER/CORNER 会在分层窗口上留下可见的圆角矩形色块（"雾膜"根因）
+            if (_bare || _transparent)
+            {
+                if (_bare)
+                {
+                    // 纯图标：无底无框；alpha=1 隐形薄膜保点击（alpha=0 会穿透）
+                    RootBorder.Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+                    RootBorder.BorderThickness = new Thickness(0);
+                }
+                else if (invisible)
+                {
+                    RootBorder.BorderThickness = new Thickness(0);
+                }
+                return;
+            }
+
+            // 毛玻璃模式：DWM 背板 + 圆角
+            var level = Acrylic.Apply(new WindowInteropHelper(this).Handle, useBackdrop: true);
+            if (level == AcrylicLevel.Solid)
+                RootBorder.Background = (Brush)FindResource("SolidSurfaceBrush");
+
+            // Dock 一律不挂 DropShadowEffect —— Effect 的中间位图会以 RootBorder 边界
+            // 裁切内容，图钉上浮放大超出的部分正是被它削掉的（§6.3）
+        };
+    }
+
+    private void OnPinsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () => RebuildPinVisuals());
+
+    /// <summary>
+    /// 可见 Dock 胶囊的屏幕矩形（不含顶部隐形余量）。
+    /// 热区判定与面板定位都用它，避免余量区产生"幽灵热区"。
+    /// </summary>
+    public Win32.RECT GetScreenRect()
+    {
+        Win32.GetWindowRect(new WindowInteropHelper(this).Handle, out var win);
+        try
+        {
+            var origin = RootBorder.PointToScreen(new Point(0, 0));
+            var w = RootBorder.ActualWidth;
+            var h = RootBorder.ActualHeight;
+            if (w > 0 && h > 0)
+            {
+                return new Win32.RECT
+                {
+                    Left = (int)origin.X,
+                    Top = (int)origin.Y,
+                    Right = (int)(origin.X + w),
+                    Bottom = (int)(origin.Y + h),
+                };
+            }
+        }
+        catch
+        {
+            // 未加载完成时回退窗口矩形
+        }
+        return win;
+    }
+
+    /// <summary>热区真实命中检测用：Dock 顶层窗口句柄。</summary>
+    public IntPtr GetHwnd() => new WindowInteropHelper(this).Handle;
+
+    /// <summary>F20 v0.7：Dock 置顶开关（默认不置顶，只在桌面层级）。</summary>
+    public void ApplyTopmost()
+        => Topmost = _vm.Store.Config.Settings.DockTopmost;
+
+    /// <summary>F35：全屏时由 HotZoneService 收起，退出后恢复。</summary>
+    public void CollapseForFullscreen()
+    {
+        if (!IsVisible) return;
+        _hiddenForFullscreen = true;
+        Hide();
+    }
+
+    public void RestoreFromFullscreen()
+    {
+        if (!_hiddenForFullscreen) return;
+        _hiddenForFullscreen = false;
+        Reposition();
+        Show();
+    }
+
+    /// <summary>F26：应用图标缩放与位置模式；initial=true 时恢复持久化的自由位置。</summary>
+    public void ApplyLayout(bool initial = false)
+    {
+        var settings = _vm.Store.Config.Settings;
+        var scale = Math.Clamp(settings.IconScale, 0.6, 1.6);
+        ContentScale.ScaleX = scale;
+        ContentScale.ScaleY = scale;
+        _plate = settings.DockIconPlate;
+        RebuildPinVisuals();
+
+        if (settings.DockPositionMode == "free")
+        {
+            if (initial)
+            {
+                Left = settings.DockX;
+                Top = settings.DockY;
+            }
+            // 非初始：保持当前位置，不跳位
+        }
+        else
+        {
+            Reposition();
+        }
+    }
+
+    /// <summary>F20 v0.8：底板样式切换（带底板/纯图标）。</summary>
+    public void ApplyIconPlate() => RebuildPinVisuals();
+
+    /// <summary>F24：实时居中（仅 bottomCenter 模式；自由模式保持用户位置）。</summary>
+    private void Reposition()
+    {
+        if (_vm.Store.Config.Settings.DockPositionMode == "free") return;
+        var wa = SystemParameters.WorkArea;
+        Top = wa.Bottom - ActualHeight;
+        Left = wa.Left + (wa.Width - ActualWidth) / 2;
+    }
+
+    private void RebuildPinVisuals()
+    {
+        _pinBorders.Clear();
+        for (var i = 0; i < PinHost.Items.Count; i++)
+        {
+            if (PinHost.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement container) continue;
+            if (FindDescendant<Border>(container) is not { } border) continue;
+            border.Background = Brushes.Transparent; // 底板统一由 Enter/Leave 控制
+            if (container is UIElement ui)
+                _pinBorders.Add((border, ui));
+        }
+        ApplyBareText();
+    }
+
+    // ---------- v1.1/v1.2：裸 Dock（纯图标）—— 去掉分组按钮底板 + 文字加深描光 ----------
+
+    private void ApplyBareText()
+    {
+        var bare = !_plate;
+        var textBrush = bare
+            ? new SolidColorBrush(Color.FromArgb(0xE6, 0x14, 0x14, 0x18))
+            : (Brush)FindResource("TextPrimaryBrush");
+        Effect? glow = null;
+        if (bare)
+        {
+            glow = new DropShadowEffect
+            {
+                Color = Colors.White,
+                BlurRadius = 4,
+                ShadowDepth = 0,
+                Opacity = 0.95,
+            };
+        }
+
+        GripText.Foreground = textBrush;
+        GripText.Effect = glow;
+        GearText.Foreground = textBrush;
+        GearText.Effect = glow;
+
+        for (var i = 0; i < GroupButtons.Items.Count; i++)
+        {
+            if (GroupButtons.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement container) continue;
+            if (FindDescendant<TextBlock>(container) is not { } tb) continue;
+            tb.Foreground = textBrush;
+            tb.Effect = glow;
+
+            // v1.2：纯图标模式下分组按钮也不能有底板——之前漏掉，是"还有一圈框"的真正来源
+            if (bare && FindDescendant<Border>(container) is { } plateBorder)
+            {
+                // 清空 Style 里的 Background 设置，否则触发器会重新画底板
+                plateBorder.Background = Brushes.Transparent;
+                plateBorder.Style = null;
+            }
+        }
+    }
+
+    private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T hit) return hit;
+            var nested = FindDescendant<T>(child);
+            if (nested != null) return nested;
+        }
+        return null;
+    }
+
+    // ---------- F21：悬停分组按钮热切换 ----------
+
+    private GroupVM? FindGroupAt(Point pt)
+    {
+        for (var i = 0; i < GroupButtons.Items.Count; i++)
+        {
+            if (GroupButtons.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement container) continue;
+            if (FindDescendant<Border>(container) is not { } border) continue;
+            var origin = border.TransformToAncestor(RootBorder).Transform(new Point());
+            var rect = new Rect(origin,
+                new Point(origin.X + border.ActualWidth, origin.Y + border.ActualHeight));
+            if (rect.Contains(pt)) return GroupButtons.Items[i] as GroupVM;
+        }
+        return null;
+    }
+
+    /// <summary>热区唤出面板前调用：光标停在哪 个分组按钮上，就定位哪个分组。</summary>
+    public void SelectGroupUnderCursor()
+    {
+        var group = FindGroupAt(Mouse.GetPosition(RootBorder));
+        if (group != null && !ReferenceEquals(group, _vm.SelectedGroup))
+            _vm.SelectedGroup = group;
+    }
+
+    /// <summary>F31 v0.8：光标（屏幕坐标）是否停在分组按钮上——热区只在这里才弹面板。</summary>
+    public bool IsOverGroupButton(Win32.POINT screenPt)
+    {
+        try
+        {
+            var local = RootBorder.PointFromScreen(new Point(screenPt.X, screenPt.Y));
+            return FindGroupAt(local) != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void Dock_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_oleDragging) return;
+
+        // F21：滑到分组按钮上即切换面板分组
+        var hovered = FindGroupAt(e.GetPosition(RootBorder));
+        if (hovered != null && !ReferenceEquals(hovered, _vm.SelectedGroup))
+            _vm.SelectedGroup = hovered;
+    }
+
+    // ---------- F23 v0.8：悬停放大动效 ----------
+
+    private (ScaleTransform Scale, TranslateTransform Lift)? GetPinTransforms(Border border)
+    {
+        // DataTemplate 内 Freezable 可能被密封冻结，冻结则换新实例（§6.3）
+        if (border.RenderTransform is TransformGroup tg && !tg.IsFrozen)
+        {
+            var s = tg.Children.OfType<ScaleTransform>().FirstOrDefault();
+            var t = tg.Children.OfType<TranslateTransform>().FirstOrDefault();
+            if (s != null && t != null) return (s, t);
+        }
+
+        var ns = new ScaleTransform(1, 1);
+        var nt = new TranslateTransform(0, 0);
+        var group = new TransformGroup();
+        group.Children.Add(ns);
+        group.Children.Add(nt);
+        border.RenderTransform = group;
+        return (ns, nt);
+    }
+
+    private void AnimatePin(Border border, double toScale, double toLift)
+    {
+        var pinTf = GetPinTransforms(border);
+        if (pinTf is null) return;
+        var (scale, lift) = pinTf.Value;
+        var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.4 };
+        var sx = new DoubleAnimation(toScale, TimeSpan.FromMilliseconds(140)) { EasingFunction = ease };
+        var sy = new DoubleAnimation(toScale, TimeSpan.FromMilliseconds(140)) { EasingFunction = ease };
+        var ly = new DoubleAnimation(toLift, TimeSpan.FromMilliseconds(140)) { EasingFunction = ease };
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, sx);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, sy);
+        lift.BeginAnimation(TranslateTransform.YProperty, ly);
+    }
+
+    private void Pin_Enter(object sender, MouseEventArgs e)
+    {
+        if (sender is not Border border) return;
+        if (_plate)
+            border.Background = (Brush)FindResource("CardBrush");
+        // v1.1：放大的图钉置顶，避免被右侧邻居盖住
+        var entry = _pinBorders.FirstOrDefault(p => ReferenceEquals(p.Border, border));
+        if (entry.Container != null)
+            Panel.SetZIndex(entry.Container, 100);
+        AnimatePin(border, 1.32, -8);
+    }
+
+    private void Pin_Leave(object sender, MouseEventArgs e)
+    {
+        if (sender is not Border border) return;
+        border.Background = Brushes.Transparent;
+        var entry = _pinBorders.FirstOrDefault(p => ReferenceEquals(p.Border, border));
+        if (entry.Container != null)
+            Panel.SetZIndex(entry.Container, 0);
+        AnimatePin(border, 1.0, 0);
+    }
+
+    // ---------- F26：⠿ 自由拖动 ----------
+
+    private void Grip_Down(object sender, MouseButtonEventArgs e) => StartFreeDrag();
+
+    private void Root_Down(object sender, MouseButtonEventArgs e)
+    {
+        // 仅空白衬垫区域（RootBorder 自身）触发拖动，不影响按钮/图钉
+        if (e.OriginalSource == RootBorder && e.LeftButton == MouseButtonState.Pressed)
+            StartFreeDrag();
+    }
+
+    private void StartFreeDrag()
+    {
+        var settings = _vm.Store.Config.Settings;
+        if (settings.DockPositionMode != "free")
+        {
+            settings.DockPositionMode = "free";
+            _vm.SaveConfig();
+        }
+        try
+        {
+            DragMove();
+        }
+        catch
+        {
+            return; // 非左键按下状态调用会抛出
+        }
+        settings.DockX = Left;
+        settings.DockY = Top;
+        _vm.SaveConfig();
+    }
+
+    // ---------- 拖出（F3 v0.5）----------
+
+    private void Pin_Down(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border border && e.LeftButton == MouseButtonState.Pressed)
+            _pinDragAnchors[border] = e.GetPosition(border);
+    }
+
+    private void Pin_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (sender is not Border border || !_pinDragAnchors.TryGetValue(border, out var anchor)) return;
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            _pinDragAnchors.Remove(border);
+            return;
+        }
+
+        var pos = e.GetPosition(border);
+        if (Math.Abs(pos.X - anchor.X) + Math.Abs(pos.Y - anchor.Y)
+            < SystemParameters.MinimumHorizontalDragDistance) return;
+
+        _pinDragAnchors.Remove(border);
+        if (border.Tag is not ItemVM item) return;
+        StartFileDrag(border, item.Model.Target);
+    }
+
+    private void StartFileDrag(FrameworkElement source, string target)
+    {
+        if (!File.Exists(target) && !Directory.Exists(target)) return; // URL 等无文件可拖
+        _oleDragging = true;
+        try
+        {
+            var data = new DataObject(DataFormats.FileDrop, new[] { target });
+            DragDrop.DoDragDrop(source, data, DragDropEffects.Copy);
+        }
+        finally
+        {
+            _oleDragging = false;
+        }
+    }
+
+    // ---------- 点击 / 菜单 ----------
+
+    private void GroupBtn_Click(object sender, MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not GroupVM group) return;
+        _vm.SelectedGroup = group; // F21：单击唤出面板并定位分组
+        _showPanel();
+    }
+
+    private void Pin_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (_oleDragging) return;
+        if ((sender as FrameworkElement)?.Tag is ItemVM item)
+            _vm.LaunchItem(item);
+    }
+
+    private void Pin_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle) return;
+        if ((sender as FrameworkElement)?.Tag is ItemVM item)
+            _vm.LaunchItem(item, asAdmin: true); // v0.6：中键=管理员运行
+    }
+
+    private void Pin_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement fe || fe.Tag is not ItemVM item) return;
+        e.Handled = true; // 防止冒泡到 Dock 根菜单
+
+        // F7 v0.6：图钉增强菜单
+        var menu = new ContextMenu { PlacementTarget = fe, Placement = PlacementMode.Top };
+
+        var open = new MenuItem { Header = "启动", FontWeight = FontWeights.SemiBold };
+        open.Click += (_, _) => _vm.LaunchItem(item);
+        menu.Items.Add(open);
+
+        var admin = new MenuItem { Header = "以管理员运行" };
+        admin.Click += (_, _) => _vm.LaunchItem(item, asAdmin: true);
+        menu.Items.Add(admin);
+
+        if (File.Exists(item.Model.Target) || Directory.Exists(item.Model.Target))
+        {
+            var locate = new MenuItem { Header = "打开所在位置" };
+            locate.Click += (_, _) => RevealInExplorer(item.Model.Target);
+            menu.Items.Add(locate);
+        }
+
+        var unpin = new MenuItem { Header = "取消钉选" };
+        unpin.Click += (_, _) => _vm.Unpin(item);
+        menu.Items.Add(unpin);
+
+        menu.IsOpen = true;
+    }
+
+    /// <summary>F42 v0.8：Dock 空白处右键 → 新建分组 / 设置 / 置顶开关。</summary>
+    private void Root_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = this, Placement = PlacementMode.Top };
+
+        var newGroup = new MenuItem { Header = "新建分组…", FontWeight = FontWeights.SemiBold };
+        newGroup.Click += (_, _) =>
+        {
+            var light = string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
+            var name = InputDialog.Show(this, "新分组名称（如：网安 / 游戏 / 剪辑）", "", light);
+            if (!string.IsNullOrWhiteSpace(name))
+                _vm.AddGroup(name);
+        };
+        menu.Items.Add(newGroup);
+
+        var settings = new MenuItem { Header = "设置…" };
+        settings.Click += (_, _) => _openSettings();
+        menu.Items.Add(settings);
+
+        var top = new MenuItem
+        {
+            Header = "Dock 置顶显示",
+            IsChecked = _vm.Store.Config.Settings.DockTopmost,
+        };
+        top.Click += (_, _) =>
+        {
+            _vm.Store.Config.Settings.DockTopmost = !_vm.Store.Config.Settings.DockTopmost;
+            _vm.SaveConfig();
+            ApplyTopmost();
+        };
+        menu.Items.Add(top);
+
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private static void RevealInExplorer(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Process.Start("explorer.exe", $"\"{path}\"");
+            else if (File.Exists(path))
+                Process.Start("explorer.exe", $"/select,\"{path}\"");
+        }
+        catch { /* 打开失败静默 */ }
+    }
+
+    private void Settings_Click(object sender, MouseButtonEventArgs e) => _openSettings();
+
+    // ---------- 拖入钉选（F22）----------
+
+    private void Dock_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+        RootBorder.BorderBrush = (Brush)FindResource("AccentBrush");
+    }
+
+    private void Dock_DragLeave(object sender, DragEventArgs e)
+        => RootBorder.BorderBrush = (Brush)FindResource("HairlineBrush");
+
+    private void Dock_Drop(object sender, DragEventArgs e)
+    {
+        Dock_DragLeave(sender, e);
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
+            _vm.PinToDock(files);
+    }
+}

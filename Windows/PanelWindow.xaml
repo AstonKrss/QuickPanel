@@ -1,0 +1,194 @@
+<Window x:Class="QuickPanel.Windows.PanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="QuickPanel"
+        Width="760" Height="440"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="True"
+        Background="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <WindowChrome.WindowChrome>
+        <WindowChrome GlassFrameThickness="-1" CaptionHeight="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Border x:Name="RootBorder" CornerRadius="12"
+            Background="{DynamicResource SurfaceOverlayBrush}"
+            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+            AllowDrop="True" DragOver="Root_DragOver" DragLeave="Root_DragLeave" Drop="Root_Drop">
+        <Border.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform x:Name="RootScale" CenterX="380" CenterY="220"/>
+                <TranslateTransform x:Name="RootTranslate" Y="30"/>
+            </TransformGroup>
+        </Border.RenderTransform>
+
+        <Grid x:Name="PanelContent">
+            <Grid.LayoutTransform>
+                <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1"/>
+            </Grid.LayoutTransform>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+
+            <!-- F60 v0.6：搜索框 -->
+            <Grid Grid.Row="0" Margin="12,10,12,2">
+                <TextBox x:Name="SearchBox" Height="34" VerticalContentAlignment="Center"
+                         FontSize="13"
+                         Background="#26FFFFFF" Foreground="{DynamicResource TextPrimaryBrush}"
+                         BorderBrush="{DynamicResource HairlineBrush}"
+                         CaretBrush="{DynamicResource TextPrimaryBrush}"
+                         KeyDown="Search_KeyDown" TextChanged="Search_TextChanged"/>
+                <TextBlock x:Name="SearchHint" Text="搜索全部分组（Enter 启动第一个结果，Esc 清空）"
+                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
+                           Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+            </Grid>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="168"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- F1：分组侧边导航 -->
+                <Border Grid.Column="0" CornerRadius="11,0,0,11" Background="{DynamicResource CardSubtleBrush}">
+                    <ListBox x:Name="GroupList" Margin="10,12"
+                             Background="Transparent" BorderThickness="0"
+                             ItemsSource="{Binding Groups}"
+                             SelectedItem="{Binding SelectedGroup}">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                <Setter Property="Padding" Value="10,8"/>
+                                <Setter Property="Margin" Value="0,2"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Bd" CornerRadius="8"
+                                                    Background="Transparent"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CardSubtleBrush}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SelectedBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" FontSize="14"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+
+                <!-- F2：图标网格 -->
+                <ScrollViewer x:Name="ItemsHost" Grid.Column="1" Margin="6,6,10,10"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding SelectedGroup.Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="86" Height="96" CornerRadius="10" Margin="4"
+                                        Tag="{Binding}" Cursor="Hand"
+                                        RenderTransformOrigin="0.5,0.5"
+                                        MouseLeftButtonDown="Item_Down" MouseMove="Item_MouseMove"
+                                        MouseEnter="Item_Enter" MouseLeave="Item_Leave"
+                                        MouseLeftButtonUp="Item_Click" MouseRightButtonUp="Item_RightClick"
+                                        MouseUp="Item_MouseUp">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="ItemScale"/>
+                                    </Border.RenderTransform>
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#3DFFFFFF"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel VerticalAlignment="Center" Margin="4,8">
+                                        <Image Source="{Binding Icon}" Width="44" Height="44"
+                                               HorizontalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <TextBlock Text="{Binding Name}" FontSize="11"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                   MaxHeight="26" TextAlignment="Center"
+                                                   HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- F60：搜索结果（跨分组） -->
+                <ScrollViewer x:Name="SearchHost" Grid.Column="1" Margin="6,6,10,10"
+                              VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                    <ItemsControl x:Name="SearchResults">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="86" Height="110" CornerRadius="10" Margin="4"
+                                        Tag="{Binding}" Cursor="Hand"
+                                        RenderTransformOrigin="0.5,0.5"
+                                        MouseLeftButtonDown="Item_Down" MouseMove="Item_MouseMove"
+                                        MouseEnter="Item_Enter" MouseLeave="Item_Leave"
+                                        MouseLeftButtonUp="Item_Click" MouseRightButtonUp="Item_RightClick"
+                                        MouseUp="Item_MouseUp">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform/>
+                                    </Border.RenderTransform>
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#3DFFFFFF"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel VerticalAlignment="Center" Margin="4,6">
+                                        <Image Source="{Binding Icon}" Width="40" Height="40"
+                                               HorizontalAlignment="Center"
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <TextBlock Text="{Binding Name}" FontSize="11"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                   MaxHeight="26" TextAlignment="Center"
+                                                   HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                        <TextBlock Text="{Binding OwnerGroup.Name}" FontSize="9"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextAlignment="Center"
+                                                   HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

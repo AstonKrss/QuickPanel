@@ -1,0 +1,293 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Media;
+using QuickPanel.Models;
+using QuickPanel.Services;
+
+namespace QuickPanel.ViewModels;
+
+/// <summary>条目视图模型：持有 Model + 已解析图标。</summary>
+public class ItemVM : INotifyPropertyChanged
+{
+    public LaunchItem Model { get; }
+
+    private string _name;
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            if (_name == value) return;
+            _name = value;
+            Model.Name = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public ImageSource? Icon { get; }
+
+    /// <summary>所属分组（搜索结果副标题与移动分组用；Dock 钉选副本为 null）。</summary>
+    public GroupVM? OwnerGroup { get; set; }
+
+    public ItemVM(LaunchItem model, IconCache icons)
+    {
+        Model = model;
+        _name = model.Name;
+        try
+        {
+            Icon = icons.GetIcon(model);
+        }
+        catch
+        {
+            // 图标提取失败不影响条目本身
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+/// <summary>分组视图模型。</summary>
+public class GroupVM : INotifyPropertyChanged
+{
+    public Group Model { get; }
+    public ObservableCollection<ItemVM> Items { get; } = new();
+
+    public string Name
+    {
+        get => Model.Name;
+        set
+        {
+            if (Model.Name == value) return;
+            Model.Name = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool DockPinned
+    {
+        get => Model.DockPinned;
+        set
+        {
+            if (Model.DockPinned == value) return;
+            Model.DockPinned = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public GroupVM(Group model, IconCache icons)
+    {
+        Model = model;
+        foreach (var item in model.Items)
+        {
+            var vm = new ItemVM(item, icons) { OwnerGroup = this };
+            Items.Add(vm);
+        }
+    }
+
+    public void AddItem(ItemVM item)
+    {
+        item.OwnerGroup = this;
+        Items.Add(item);
+        Model.Items.Add(item.Model);
+    }
+
+    public void RemoveItem(ItemVM item)
+    {
+        Items.Remove(item);
+        Model.Items.Remove(item.Model);
+        item.OwnerGroup = null;
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+/// <summary>主视图模型：分组、Dock 钉选与全部条目操作。</summary>
+public class MainViewModel : INotifyPropertyChanged
+{
+    public ConfigStore Store { get; }
+    public IconCache Icons { get; } = new();
+    public LaunchService Launcher { get; } = new();
+
+    public ObservableCollection<GroupVM> Groups { get; } = new();
+    public ObservableCollection<ItemVM> DockPins { get; } = new();
+
+    private GroupVM? _selectedGroup;
+    public GroupVM? SelectedGroup
+    {
+        get => _selectedGroup;
+        set
+        {
+            if (_selectedGroup == value) return;
+            _selectedGroup = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public MainViewModel(ConfigStore store) => Store = store;
+
+    public void LoadFromConfig()
+    {
+        if (Store.FirstRun || Store.Config.Groups.Count == 0)
+            FirstRunSeeder.Seed(Store.Config);
+
+        // F44：非首运但 Dock 钉选为空时自动播种（沿用分组前几项）
+        if (!Store.FirstRun && Store.Config.DockPins.Count == 0)
+        {
+            foreach (var item in Store.Config.Groups.SelectMany(g => g.Items).Take(6))
+                Store.Config.DockPins.Add(item);
+        }
+
+        foreach (var group in Store.Config.Groups)
+            Groups.Add(new GroupVM(group, Icons));
+        foreach (var pin in Store.Config.DockPins)
+            DockPins.Add(new ItemVM(pin, Icons));
+
+        SelectedGroup = Groups.FirstOrDefault();
+    }
+
+    public void SaveConfig()
+    {
+        Store.Config.Groups = Groups.Select(g => g.Model).ToList();
+        Store.Config.DockPins = DockPins.Select(p => p.Model).ToList();
+        Store.Save();
+    }
+
+    // ---------- 条目 ----------
+
+    public void LaunchItem(ItemVM item, bool asAdmin = false)
+        => Launcher.Launch(item.Model, asAdmin);
+
+    /// <summary>F3：拖入文件加入当前分组并立即持久化。</summary>
+    public void AddToCurrentGroup(IEnumerable<string> paths)
+    {
+        var group = SelectedGroup;
+        if (group is null) return;
+        foreach (var path in paths)
+        {
+            var item = ShortcutParser.Parse(path);
+            if (item is null) continue;
+            group.AddItem(new ItemVM(item, Icons));
+        }
+        SaveConfig();
+    }
+
+    public void RemoveFromCurrentGroup(ItemVM item)
+    {
+        SelectedGroup?.RemoveItem(item);
+        SaveConfig();
+    }
+
+    // ---------- Dock（F22 + v0.6 固定/取消）----------
+
+    public void PinToDock(IEnumerable<string> paths)
+    {
+        const int maxPins = 14;
+        foreach (var path in paths)
+        {
+            var item = ShortcutParser.Parse(path);
+            if (item is null) continue;
+            if (DockPins.Any(p => string.Equals(p.Model.Target, item.Target, StringComparison.OrdinalIgnoreCase)))
+                continue; // 防重复
+            if (DockPins.Count >= maxPins)
+            {
+                MessageBox.Show($"Dock 钉选已达上限 {maxPins} 个，请先取消部分钉选。",
+                    "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+                break;
+            }
+            DockPins.Add(new ItemVM(item, Icons));
+        }
+        SaveConfig();
+    }
+
+    public void Unpin(ItemVM item)
+    {
+        DockPins.Remove(item);
+        SaveConfig();
+    }
+
+    public bool IsPinned(ItemVM item)
+        => DockPins.Any(p => string.Equals(p.Model.Target, item.Model.Target, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>v0.6：面板条目固定/取消固定到 Dock（钉选使用独立副本，不与分组条目共享实例）。</summary>
+    public void TogglePin(ItemVM item)
+    {
+        var existing = DockPins.FirstOrDefault(p =>
+            string.Equals(p.Model.Target, item.Model.Target, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            DockPins.Remove(existing);
+            SaveConfig();
+            return;
+        }
+        if (DockPins.Count >= 14)
+        {
+            MessageBox.Show("Dock 钉选已达上限 14 个，请先取消部分钉选。",
+                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var clone = new LaunchItem
+        {
+            Name = item.Model.Name,
+            Target = item.Model.Target,
+            Args = item.Model.Args,
+            WorkDir = item.Model.WorkDir,
+            Kind = item.Model.Kind,
+            RunAsAdmin = item.Model.RunAsAdmin,
+            IconCache = item.Model.IconCache,
+        };
+        DockPins.Add(new ItemVM(clone, Icons));
+        SaveConfig();
+    }
+
+    /// <summary>v0.6：把条目移动到其它分组。</summary>
+    public void MoveItem(ItemVM item, GroupVM target)
+    {
+        if (ReferenceEquals(item.OwnerGroup, target)) return;
+        item.OwnerGroup?.RemoveItem(item);
+        target.AddItem(item);
+        SaveConfig();
+    }
+
+    /// <summary>F60 v0.6：跨分组搜索（名称包含匹配，前缀优先）。</summary>
+    public List<ItemVM> SearchAll(string query)
+    {
+        var q = query.Trim();
+        if (q.Length == 0) return new List<ItemVM>();
+        return Groups.SelectMany(g => g.Items)
+            .Where(i => i.Name.Contains(q, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(i => i.Name.StartsWith(q, StringComparison.OrdinalIgnoreCase))
+            .Take(40)
+            .ToList();
+    }
+
+    // ---------- 分组管理（F9 基础版）----------
+
+    public void AddGroup(string name)
+    {
+        var group = new GroupVM(new Group { Id = Guid.NewGuid().ToString("N")[..8], Name = name }, Icons);
+        Groups.Add(group);
+        SelectedGroup = group;
+        SaveConfig();
+    }
+
+    public void RemoveGroup(GroupVM group)
+    {
+        Groups.Remove(group);
+        if (SelectedGroup == group)
+            SelectedGroup = Groups.FirstOrDefault();
+        SaveConfig();
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}

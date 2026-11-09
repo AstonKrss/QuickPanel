@@ -1,0 +1,22 @@
+# Build outputs
+bin/
+obj/
+publish/
+*.user
+*.suo
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.DotSettings.user
+
+# Agent / tooling
+.zcode/
+
+# Local scratch scripts
+_probe_img.ps1
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

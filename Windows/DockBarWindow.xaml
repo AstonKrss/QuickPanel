@@ -1,0 +1,129 @@
+<Window x:Class="QuickPanel.Windows.DockBarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="QuickPanel Dock"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="True"
+        Background="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <WindowChrome.WindowChrome>
+        <WindowChrome GlassFrameThickness="-1" CaptionHeight="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <!-- F20：常驻透明长条（v0.5：背景模式毛玻璃/全透明可切换） -->
+    <!-- 顶部隐形余量：防图钉放大被窗口边界裁切；12px 为 111% 缩放下的最低值（像素实测该区域渲染为零） -->
+    <Border x:Name="RootBorder" CornerRadius="16" Margin="0,12,0,2"
+            Background="{DynamicResource SurfaceOverlayBrush}"
+            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+            Padding="10,7" AllowDrop="True"
+            DragOver="Dock_DragOver" DragLeave="Dock_DragLeave" Drop="Dock_Drop"
+            MouseMove="Dock_MouseMove"
+            MouseLeftButtonDown="Root_Down" MouseRightButtonUp="Root_RightClick">
+        <StackPanel x:Name="DockContent" Orientation="Horizontal">
+            <StackPanel.LayoutTransform>
+                <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1"/>
+            </StackPanel.LayoutTransform>
+
+            <!-- F26 v0.5：⠿ 自由拖动手柄 -->
+            <Border x:Name="DragGrip" CornerRadius="8" Padding="6,4" Margin="0,0,6,0"
+                    VerticalAlignment="Center" Cursor="SizeAll" Background="Transparent"
+                    ToolTip="按住拖动，把 Dock 放到任意位置"
+                    MouseLeftButtonDown="Grip_Down">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource CardSubtleBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                            <TextBlock x:Name="GripText" Text="⠿" FontSize="15"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </Border>
+
+            <!-- F21：分组快进按钮（v0.5 悬停热切换） -->
+            <ItemsControl x:Name="GroupButtons" ItemsSource="{Binding Groups}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="GroupBtn" CornerRadius="10" Margin="2,0" Padding="12,7"
+                                Background="{DynamicResource CardSubtleBrush}"
+                                Tag="{Binding}" Cursor="Hand"
+                                MouseLeftButtonUp="GroupBtn_Click">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock x:Name="GroupText" Text="{Binding Name}" FontSize="13"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Width="1" Margin="10,0" Background="{DynamicResource HairlineBrush}"/>
+
+            <!-- F22/F23：钉选图标 + 弹钢琴放大（v0.5 支持拖出） -->
+            <ItemsControl x:Name="PinHost" ItemsSource="{Binding DockPins}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- F23 v0.8：悬停放大 1.32x + 上浮（Enter/Leave 动画，底板样式由代码控制） -->
+                        <Border Width="44" Height="44" CornerRadius="12" Margin="3,0"
+                                RenderTransformOrigin="0.5,0.5"
+                                Tag="{Binding}" ToolTip="{Binding Name}" Cursor="Hand"
+                                MouseLeftButtonDown="Pin_Down" MouseMove="Pin_MouseMove"
+                                MouseEnter="Pin_Enter" MouseLeave="Pin_Leave"
+                                MouseLeftButtonUp="Pin_Click" MouseRightButtonUp="Pin_RightClick"
+                                MouseUp="Pin_MouseUp">
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform x:Name="PinScale"/>
+                                    <TranslateTransform x:Name="PinLift" Y="0"/>
+                                </TransformGroup>
+                            </Border.RenderTransform>
+                            <Image Source="{Binding Icon}" Width="32" Height="32"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Width="1" Margin="10,0" Background="{DynamicResource HairlineBrush}"/>
+
+            <!-- F25：设置入口 -->
+            <Border CornerRadius="10" Padding="10,7" VerticalAlignment="Center"
+                    Cursor="Hand" ToolTip="设置"
+                    MouseLeftButtonUp="Settings_Click">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource CardSubtleBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock x:Name="GearText" Text="⚙" FontSize="15"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>

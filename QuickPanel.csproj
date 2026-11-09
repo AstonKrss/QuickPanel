@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- PRD §6.2：托盘用 WinForms 内置 NotifyIcon，零 NuGet -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>QuickPanel</AssemblyName>
+    <RootNamespace>QuickPanel</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 混用 WPF+WinForms：DPI 由项目属性统一声明（WFAC010），PerMonitorV2 进程级生效 -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Version>1.1.0</Version>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PRD §6.3：WinForms+WPF 隐式 using 冲突 → 显式裁剪，按需别名引用 -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <!-- PRD §5.2 零外联：不引用任何 HTTP 客户端库 -->
+    <Using Remove="System.Net.Http" />
+  </ItemGroup>
+
+</Project>

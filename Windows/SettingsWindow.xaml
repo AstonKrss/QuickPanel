@@ -1,0 +1,389 @@
+<Window x:Class="QuickPanel.Windows.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="QuickPanel 设置"
+        Width="640" Height="560"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Background="{DynamicResource SbBg}" UseLayoutRounding="True"
+        FontFamily="Segoe UI, Microsoft YaHei UI">
+    <Window.Resources>
+        <!-- v0.9：深/浅主题令牌（代码可切换） -->
+        <SolidColorBrush x:Key="SbBg" Color="#FF17171C"/>
+        <SolidColorBrush x:Key="SbNav" Color="#FF121217"/>
+        <SolidColorBrush x:Key="SbCard" Color="#14FFFFFF"/>
+        <SolidColorBrush x:Key="SbCardBorder" Color="#1FFFFFFF"/>
+        <SolidColorBrush x:Key="SbText" Color="#FFE8EAF0"/>
+        <SolidColorBrush x:Key="SbTextSub" Color="#FF9AA0AE"/>
+        <SolidColorBrush x:Key="SbField" Color="#1FFFFFFF"/>
+        <SolidColorBrush x:Key="SbFieldBorder" Color="#3DFFFFFF"/>
+        <SolidColorBrush x:Key="SbBtn" Color="#2EFFFFFF"/>
+        <SolidColorBrush x:Key="SbBtnBorder" Color="#47FFFFFF"/>
+        <SolidColorBrush x:Key="SbBtnHover" Color="#42FFFFFF"/>
+        <SolidColorBrush x:Key="SbBtnPress" Color="#21FFFFFF"/>
+        <SolidColorBrush x:Key="SbSwatchBorder" Color="#59FFFFFF"/>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource SbTextSub}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SbCard}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SbCardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="18,14"/>
+        </Style>
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SbBtn}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SbText}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SbBtnBorder}"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="8" BorderThickness="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SbBtnHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SbBtnPress}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="10" BorderThickness="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SwatchButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource SbSwatchBorder}"
+                                Background="{TemplateBinding Background}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource SbField}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SbText}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SbFieldBorder}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource SbText}"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource SbText}"/>
+            <Setter Property="Margin" Value="0,0,18,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource SbText}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <!-- 左侧导航 -->
+        <Style x:Key="NavItem" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource SbTextSub}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="12,9"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" CornerRadius="9" Background="Transparent"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SbCard}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectedBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SbText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ═══ 左侧分类导航 ═══ -->
+        <Border Grid.Column="0" Background="{DynamicResource SbNav}" Padding="12,18,12,12">
+            <StackPanel>
+                <TextBlock Text="QuickPanel" FontSize="16" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SbText}" Margin="10,0,0,0"/>
+                <TextBlock Text="设置中心" FontSize="11" Margin="10,2,0,16"/>
+                <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0"
+                         SelectedIndex="0" SelectionChanged="Nav_SelectionChanged"
+                         ItemContainerStyle="{StaticResource NavItem}">
+                    <ListBoxItem Content="常规"/>
+                    <ListBoxItem Content="外观"/>
+                    <ListBoxItem Content="Dock"/>
+                    <ListBoxItem Content="面板"/>
+                    <ListBoxItem Content="分组"/>
+                    <ListBoxItem Content="数据"/>
+                </ListBox>
+                <TextBlock x:Name="VersionText" Text="v1.1.0" FontSize="10"
+                           VerticalAlignment="Bottom" Margin="10,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══ 右侧内容 ═══ -->
+        <Grid Grid.Column="1" Margin="24,16,24,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="SectionTitle" Text="常规" FontSize="19" FontWeight="SemiBold"
+                       Foreground="{DynamicResource SbText}"/>
+            <TextBlock x:Name="FirstRunHint" Grid.Row="1"
+                       Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0"
+                       Visibility="Collapsed" TextWrapping="Wrap"/>
+
+            <!-- 内容区：六个分类面板，代码切换可见性 -->
+            <Grid Grid.Row="2" Margin="0,12,0,0">
+                <!-- ── 常规 ── -->
+                <Grid x:Name="SecGeneral">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="设置主题"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <RadioButton x:Name="ThemeDarkRadio" Content="深色" GroupName="stheme" Checked="Theme_Changed"/>
+                                <RadioButton x:Name="ThemeLightRadio" Content="浅色" GroupName="stheme" Checked="Theme_Changed"/>
+                            </StackPanel>
+                            <TextBlock Text="全局热键（如 Alt+Q / Ctrl+Alt+Space）" Margin="0,16,0,0"/>
+                            <TextBox x:Name="HotkeyBox" Height="34" VerticalContentAlignment="Center" Margin="0,6,0,0"/>
+                            <CheckBox x:Name="AutostartCheck" Content="开机自启（写入 HKCU Run 键）" Margin="0,14,0,0"/>
+                            <CheckBox x:Name="FullscreenHideCheck" Content="全屏时自动隐藏 Dock 与面板（游戏 / F11）" Margin="0,8,0,0"/>
+                            <TextBlock Text="鼠标热区唤出延迟" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="HotZoneSlider" Minimum="100" Maximum="1000"
+                                        TickFrequency="50" IsMoveToPointEnabled="True"/>
+                                <TextBlock x:Name="HotZoneText" Grid.Column="1" Text="300 ms"
+                                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SbText}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ── 外观 ── -->
+                <Grid x:Name="SecAppearance" Visibility="Collapsed">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="背景模式"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <RadioButton x:Name="ModeAcrylicRadio" Content="毛玻璃" GroupName="bgmode" Checked="Mode_Changed" Unchecked="Mode_Changed"/>
+                                <RadioButton x:Name="ModeTransparentRadio" Content="全透明" GroupName="bgmode" Checked="Mode_Changed" Unchecked="Mode_Changed"/>
+                                <RadioButton x:Name="ModeInvisibleRadio" Content="完全隐形（无底板）" GroupName="bgmode" Checked="Mode_Changed" Unchecked="Mode_Changed"/>
+                            </StackPanel>
+                            <TextBlock Text="底色 #AARRGGBB（仅「全透明」模式生效；选「完全隐形」可一键无底板）" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="SurfaceColorBox" Height="30" VerticalContentAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource SwatchButton}" Background="#C0151518" Tag="surface|#C0151518" Click="Swatch_Click" ToolTip="暗玻璃"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#80202020" Tag="surface|#80202020" Click="Swatch_Click" ToolTip="浅灰玻璃"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#3C151518" Tag="surface|#3C151518" Click="Swatch_Click" ToolTip="微透"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#10101018" Tag="surface|#10101018" Click="Swatch_Click" ToolTip="近乎全透"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="强调色 #RRGGBB" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="AccentColorBox" Height="30" VerticalContentAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource SwatchButton}" Background="#7C6FFF" Tag="accent|#7C6FFF" Click="Swatch_Click" ToolTip="紫"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#FF7C6F" Tag="accent|#FF7C6F" Click="Swatch_Click" ToolTip="橙红"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#4FC3F7" Tag="accent|#4FC3F7" Click="Swatch_Click" ToolTip="天蓝"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#66BB6A" Tag="accent|#66BB6A" Click="Swatch_Click" ToolTip="绿"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#FFD54F" Tag="accent|#FFD54F" Click="Swatch_Click" ToolTip="黄"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="面板透明度（整体，实时预览）" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="48"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="OpacitySlider" Minimum="0.55" Maximum="1.0"
+                                        Value="0.92" TickFrequency="0.01" IsMoveToPointEnabled="True"/>
+                                <TextBlock x:Name="OpacityValueText" Grid.Column="1"
+                                           Text="92%" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SbText}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ── Dock ── -->
+                <Grid x:Name="SecDock" Visibility="Collapsed">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="位置"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <RadioButton x:Name="PosCenterRadio" Content="底部居中" GroupName="dockpos" Checked="Pos_Changed"/>
+                                <RadioButton x:Name="PosFreeRadio" Content="自由拖动（按住 ⠿ 手柄）" GroupName="dockpos" Checked="Pos_Changed"/>
+                                <Button Content="重置位置" Click="ResetPosition_Click" Margin="4,0,0,0"/>
+                            </StackPanel>
+                            <CheckBox x:Name="DockTopmostCheck" Content="Dock 置顶显示（关闭时只在桌面显示，其他软件会覆盖它）"
+                                      Margin="0,14,0,0" Click="DockTopmost_Changed"/>
+                            <TextBlock Text="底板样式" Margin="0,16,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <RadioButton x:Name="PlateRadio" Content="带底板（胶囊亚克力）" GroupName="plate" Checked="Plate_Changed"/>
+                                <RadioButton x:Name="BareRadio" Content="纯图标（无底无框，直接悬浮）" GroupName="plate" Checked="Plate_Changed"/>
+                            </StackPanel>
+                            <TextBlock Text="图标大小" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="48"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="IconScaleSlider" Minimum="0.6" Maximum="1.6"
+                                        Value="1.0" TickFrequency="0.05" IsMoveToPointEnabled="True"/>
+                                <TextBlock x:Name="IconScaleText" Grid.Column="1"
+                                           Text="100%" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SbText}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ── 面板 ── -->
+                <Grid x:Name="SecPanel" Visibility="Collapsed">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="面板缩放（含搜索框，实时生效）"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="48"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="PanelScaleSlider" Minimum="0.8" Maximum="1.4"
+                                        Value="1.0" TickFrequency="0.05" IsMoveToPointEnabled="True"/>
+                                <TextBlock x:Name="PanelScaleText" Grid.Column="1"
+                                           Text="100%" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SbText}"/>
+                            </Grid>
+                            <TextBlock Text="鼠标离开后自动收回（0 = 立即；点击其他窗口总是立即收回）" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="HideDelaySlider" Minimum="0" Maximum="2000"
+                                        TickFrequency="100" IsMoveToPointEnabled="True"/>
+                                <TextBlock x:Name="HideDelayText" Grid.Column="1" Text="300 ms"
+                                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SbText}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ── 分组 ── -->
+                <Grid x:Name="SecGroups" Visibility="Collapsed">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <ListBox x:Name="GroupEditList" Height="150"
+                                     Background="{DynamicResource SbField}" BorderBrush="{DynamicResource SbFieldBorder}" BorderThickness="1"
+                                     Foreground="{DynamicResource SbText}"
+                                     DisplayMemberPath="Name"/>
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="GroupRenameBox" Height="32" VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="重命名" Click="Group_Rename_Click" Margin="8,0,0,0"/>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <Button Content="新建分组" Click="Group_Add_Click"/>
+                                <Button Content="删除分组" Click="Group_Delete_Click" Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Text="提示：也可以在 Dock 上右键 →「新建分组…」" Margin="0,14,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ── 数据 ── -->
+                <Grid x:Name="SecData" Visibility="Collapsed">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="备份配置" Click="Backup_Click"/>
+                                <Button Content="恢复默认外观" Click="ResetAppearance_Click" Margin="8,0,0,0"/>
+                                <Button Content="打开配置目录" Click="OpenConfigDir_Click" Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Text="配置为 %AppData%\QuickPanel\config.json（明文 JSON，可手改/备份/迁移）" Margin="0,14,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <Button Content="完成" Click="Done_Click" Grid.Row="3" Style="{StaticResource PrimaryButton}"
+                    Margin="0,12,0,0" Height="38" FontSize="14"/>
+        </Grid>
+    </Grid>
+</Window>
