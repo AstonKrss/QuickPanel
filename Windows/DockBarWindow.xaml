@@ -11,15 +11,21 @@
     </WindowChrome.WindowChrome>
 
     <!-- F20：常驻透明长条（v0.5：背景模式毛玻璃/全透明可切换） -->
-    <!-- 顶部余量由代码按图标缩放动态计算（v1.5），确保悬停放大不被窗口边界裁切 -->
-    <Border x:Name="RootBorder" CornerRadius="16" Margin="0,12,0,2"
+    <!-- v1.6：顶部余量改用 Padding（SizeToContent 会忽略 Margin，导致窗口不增高而内容被挤出） -->
+    <Border x:Name="RootBorder" CornerRadius="16" Margin="0,0,0,2"
             Background="{DynamicResource SurfaceOverlayBrush}"
             BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             Padding="10,7" AllowDrop="True" ClipToBounds="False"
             DragOver="Dock_DragOver" DragLeave="Dock_DragLeave" Drop="Dock_Drop"
             MouseMove="Dock_MouseMove"
             MouseLeftButtonDown="Root_Down" MouseRightButtonUp="Root_RightClick">
-        <StackPanel x:Name="DockContent" Orientation="Horizontal" ClipToBounds="False">
+        <!-- 外层 Grid 承载顶部余量：Grid 高度参与 SizeToContent 计算 -->
+        <Grid x:Name="HeadroomHost">
+            <Grid.RowDefinitions>
+                <RowDefinition x:Name="HeadroomRow" Height="20"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <StackPanel x:Name="DockContent" Grid.Row="1" Orientation="Horizontal" ClipToBounds="False">
             <StackPanel.LayoutTransform>
                 <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1"/>
             </StackPanel.LayoutTransform>
@@ -130,6 +136,7 @@
                 <TextBlock x:Name="GearText" Text="⚙" FontSize="15"
                            Foreground="{DynamicResource TextSecondaryBrush}"/>
             </Border>
-        </StackPanel>
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>

@@ -190,10 +190,13 @@ public partial class DockBarWindow : Window
         ContentScale.ScaleY = scale;
         _plate = settings.DockIconPlate;
 
-        // v1.5：顶部余量跟随缩放 —— 图钉悬停放大 1.32x + 上浮 8px 的视觉溢出量
-        // 溢出 = 44·s·0.32/2 + 8·s = 15.04·s（s=图标缩放），减去 RootBorder 自带 padding 7px
-        var headroom = Math.Max(12, 15.04 * scale - 7 + 4); // +4 安全余量（DPI 取整）
-        RootBorder.Margin = new Thickness(0, Math.Round(headroom), 0, 2);
+        // v1.6：顶部余量用 Grid 行高承载（SizeToContent 会忽略 Border.Margin，导致窗口不增高）
+        // 溢出 = 44·s·0.32/2 + 8·s ≈ 15·s（s=图标缩放），+12 兜底 DPI 取整
+        var headroom = Math.Max(20, 15.04 * scale + 12);
+        HeadroomRow.Height = new GridLength(Math.Round(headroom));
+        InvalidateMeasure();
+        UpdateLayout();
+
 
         RebuildPinVisuals();
 
@@ -383,6 +386,7 @@ public partial class DockBarWindow : Window
         if (entry.Container != null)
             Panel.SetZIndex(entry.Container, 100);
         AnimatePin(border, 1.32, -8);
+
     }
 
     private void Pin_Leave(object sender, MouseEventArgs e)
