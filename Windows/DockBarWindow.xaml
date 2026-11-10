@@ -4,7 +4,7 @@
         Title="QuickPanel Dock"
         SizeToContent="WidthAndHeight"
         WindowStyle="None" ResizeMode="NoResize"
-        ShowInTaskbar="False" ShowActivated="False" Topmost="True"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="False"
         Background="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True">
     <WindowChrome.WindowChrome>
         <WindowChrome GlassFrameThickness="-1" CaptionHeight="0" CornerRadius="0" UseAeroCaptionButtons="False"/>

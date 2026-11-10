@@ -630,17 +630,21 @@ public partial class DockBarWindow : Window
         _pinDragAnchors.Remove(border);
         if (border.Tag is not ItemVM item) return;
 
-        // 打包为自定义数据：内部排序用 + 同时提供 FileDrop 供拖到桌面
+        // v1.18：只携带自定义数据，不带 FileDrop ——
+        // 这样拖到桌面不会被资源管理器接收（避免"复制一份到桌面"），
+        // 拖出 Dock 即视为"取消钉选 → 退回原分组"。
         var data = new DataObject();
         data.SetData("QuickPanel.Pin", item);
-        if (File.Exists(item.Model.Target) || Directory.Exists(item.Model.Target))
-            data.SetData(DataFormats.FileDrop, new[] { item.Model.Target });
 
-        // v1.17：拖拽结束时若光标已离开 Dock 且未落在任何目标上 → 取消钉选
-        var target = DragDrop.DoDragDrop(border, data, DragDropEffects.Move | DragDropEffects.Copy);
+        // 记录拖拽前所在分组，用于拖出时给出准确提示
+        var sourceGroup = item.OwnerGroup
+                          ?? _vm.Groups.FirstOrDefault(g => g.Items.Any(i =>
+                              string.Equals(i.Model.Target, item.Model.Target, StringComparison.OrdinalIgnoreCase)));
 
-        // DoDragDrop 返回 None 表示没有被任何目标接受（拖到 Dock 外空白处松开）
-        if (target == DragDropEffects.None)
+        var result = DragDrop.DoDragDrop(border, data, DragDropEffects.Move);
+
+        // 未被任何目标接受 + 光标已离开 Dock → 取消钉选（条目仍在原分组中）
+        if (result == DragDropEffects.None)
         {
             var cur = GetCursorScreenPoint();
             var dockRect = GetScreenRect();
@@ -648,7 +652,10 @@ public partial class DockBarWindow : Window
                           || cur.X < dockRect.Left - 4 || cur.X > dockRect.Right + 4;
             if (outside)
             {
-                _vm.Unpin(item); // 拖离 Dock → 移除这一个，后面的自动前移
+                _vm.Unpin(item);
+                // v1.18：告知用户它回到了哪个分组（不是被删除）
+                if (sourceGroup != null)
+                    ShowToast($"已取消钉选，仍保留在「{sourceGroup.Name}」分组中");
             }
         }
     }
@@ -675,6 +682,35 @@ public partial class DockBarWindow : Window
         e.Handled = true;
     }
 
+    /// <summary>v1.18：轻量提示（不改动 Dock 布局，1.8 秒后自动消失）。</summary>
+    private void ShowToast(string message)
+    {
+        try
+        {
+            var border = new Border
+            {
+                Background = new SolidColorBrush(Color.FromArgb(0xF0, 0x20, 0x20, 0x24)),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(14, 8, 14, 8),
+                Child = new TextBlock { Text = message, FontSize = 12, Foreground = Brushes.White },
+            };
+            var popup = new System.Windows.Controls.Primitives.Popup
+            {
+                Child = border,
+                PlacementTarget = this,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Top,
+                StaysOpen = true,
+                IsOpen = true,
+                AllowsTransparency = true,
+                VerticalOffset = -12,
+            };
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1800) };
+            timer.Tick += (_, _) => { timer.Stop(); popup.IsOpen = false; };
+            timer.Start();
+        }
+        catch { /* 提示失败不影响主流程 */ }
+    }
+
     /// <summary>v1.17：按相对 PinHost 的横向坐标找图钉（图钉水平排列，纵向放宽）。</summary>
     private ItemVM? FindPinAtPoint(Point ptInHost)
     {
@@ -691,6 +727,24 @@ public partial class DockBarWindow : Window
             catch { /* 忽略 */ }
         }
         return null;
+    }
+
+    /// <summary>v1.18：按光标相对 PinHost 的 X 坐标，算出应插入的索引（左半区插前，右半区插后）。</summary>
+    private int ComputeInsertIndex(Point ptInHost)
+    {
+        for (var i = 0; i < PinHost.Items.Count; i++)
+        {
+            if (PinHost.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement c) continue;
+            if (FindDescendant<Border>(c) is not { } b) continue;
+            try
+            {
+                var origin = b.TranslatePoint(new Point(0, 0), PinHost);
+                var mid = origin.X + b.ActualWidth / 2;
+                if (ptInHost.X < mid) return i;       // 落在该图钉左半区 → 插到它前面
+            }
+            catch { /* 忽略 */ }
+        }
+        return _vm.DockPins.Count; // 落到最右侧 → 追加末尾
     }
 
     private void PinHost_Drop(object sender, DragEventArgs e)
@@ -715,10 +769,11 @@ public partial class DockBarWindow : Window
             return;
         }
 
-        // 场景 2：从面板拖来的条目 → 钉选（保留其名称/参数/管理员设置）
+        // 场景 2：从面板拖来的条目 → 钉选（v1.18：按光标位置插入，不再只追加末尾）
         if (e.Data.GetData("QuickPanel.Item") is ItemVM panelItem)
         {
-            _vm.PinExistingItem(panelItem);
+            var insertAt = ComputeInsertIndex(e.GetPosition(PinHost));
+            _vm.PinExistingItem(panelItem, insertAt);
             e.Handled = true;
             return;
         }

@@ -249,8 +249,11 @@ public class MainViewModel : INotifyPropertyChanged
 
     // ---------- Dock（F22 + v0.6 固定/取消）----------
 
-    /// <summary>v1.17：把面板中的条目钉选到 Dock（保留名称/参数/工作目录/管理员设置）。</summary>
-    public bool PinExistingItem(ItemVM item)
+    /// <summary>
+    /// v1.17：把面板中的条目钉选到 Dock（保留名称/参数/工作目录/管理员设置）。
+    /// v1.18：支持指定插入位置 index（-1 = 追加到末尾）。
+    /// </summary>
+    public bool PinExistingItem(ItemVM item, int index = -1)
     {
         const int maxPins = 14;
         if (DockPins.Any(p => string.Equals(p.Model.Target, item.Model.Target, StringComparison.OrdinalIgnoreCase)))
@@ -272,7 +275,13 @@ public class MainViewModel : INotifyPropertyChanged
             RunAsAdmin = item.Model.RunAsAdmin,
             IconCache = item.Model.IconCache,
         };
-        DockPins.Add(new ItemVM(clone, Icons));
+        var vm = new ItemVM(clone, Icons);
+
+        if (index < 0 || index >= DockPins.Count)
+            DockPins.Add(vm);
+        else
+            DockPins.Insert(index, vm);
+
         SaveConfig();
         return true;
     }
