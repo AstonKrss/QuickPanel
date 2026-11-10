@@ -76,6 +76,9 @@ public class GroupVM : INotifyPropertyChanged
     public Group Model { get; }
     public ObservableCollection<ItemVM> Items { get; } = new();
 
+    /// <summary>v1.23：分组 Id（初始化向导按标准 Id 归类用）。</summary>
+    public string Id => Model.Id;
+
     public string Name
     {
         get => Model.Name;
@@ -153,9 +156,13 @@ public class MainViewModel : INotifyPropertyChanged
 
     public MainViewModel(ConfigStore store) => Store = store;
 
-    public void LoadFromConfig()
+    /// <summary>
+    /// 从配置加载分组与钉选。
+    /// v1.23：seedOnFirstRun=false 时跳过自动播种 —— 交由初始化向导控制导入内容。
+    /// </summary>
+    public void LoadFromConfig(bool seedOnFirstRun = true)
     {
-        if (Store.FirstRun || Store.Config.Groups.Count == 0)
+        if (seedOnFirstRun && (Store.FirstRun || Store.Config.Groups.Count == 0))
             FirstRunSeeder.Seed(Store.Config);
 
         // F44：非首运但 Dock 钉选为空时自动播种（v1.7：仅首次，用户清空后不再回填）
@@ -436,6 +443,34 @@ public class MainViewModel : INotifyPropertyChanged
         Groups.Add(group);
         SelectedGroup = group;
         SaveConfig();
+    }
+
+    /// <summary>v1.23：按指定 Id 建组（初始化向导用，保证 5 个标准分组 Id 稳定）。</summary>
+    public void AddGroupInternal(string id, string name)
+    {
+        if (Groups.Any(g => g.Id == id)) return;
+        var group = new GroupVM(new Group { Id = id, Name = name, DockPinned = true }, Icons);
+        Groups.Add(group);
+        if (SelectedGroup is null) SelectedGroup = group;
+    }
+
+    /// <summary>v1.23：直接钉选一个 Model（初始化向导用，不弹窗不写盘）。</summary>
+    public void PinItemDirect(LaunchItem model)
+    {
+        if (DockPins.Any(p => string.Equals(p.Model.Target, model.Target, StringComparison.OrdinalIgnoreCase)))
+            return;
+        if (DockPins.Count >= 14) return;
+        var clone = new LaunchItem
+        {
+            Name = model.Name,
+            Target = model.Target,
+            Args = model.Args,
+            WorkDir = model.WorkDir,
+            Kind = model.Kind,
+            RunAsAdmin = model.RunAsAdmin,
+            IconCache = model.IconCache,
+        };
+        DockPins.Add(new ItemVM(clone, Icons));
     }
 
     public void RemoveGroup(GroupVM group)

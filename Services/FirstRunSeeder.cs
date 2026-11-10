@@ -95,13 +95,21 @@ public static class FirstRunSeeder
 
     public static string Classify(string text)
     {
+        return TryClassify(text) ?? "tools"; // 未命中归入工具组
+    }
+
+    /// <summary>
+    /// v1.23：尝试按关键词分类，未命中返回 null（用于区分"确实属于工具"与"兜底归入工具"）。
+    /// </summary>
+    public static string? TryClassify(string text)
+    {
         var lower = text.ToLowerInvariant();
         foreach (var def in GroupDefs)
         {
             if (def.Keywords.Any(lower.Contains))
                 return def.Id;
         }
-        return "tools"; // 未命中归入工具组
+        return null;
     }
 
     private static List<LaunchItem> SeedDockPins(List<LaunchItem> items)

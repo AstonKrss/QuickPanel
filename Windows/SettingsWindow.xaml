@@ -594,6 +594,7 @@
                                 <Button Content="移除条目" Click="GroupItems_Remove_Click" Padding="12,4"/>
                                 <Button Content="移动到分组" Click="GroupItems_MoveTo_Click" Margin="6,0,0,0" Padding="12,4"/>
                                 <Button Content="添加条目" Click="GroupItems_Add_Click" Margin="6,0,0,0" Padding="12,4"/>
+                                <Button Content="扫描添加程序…" Click="GroupItems_Scan_Click" Margin="6,0,0,0" Padding="12,4"/>
                             </StackPanel>
                         </Grid>
                     </Border>

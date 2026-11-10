@@ -578,6 +578,22 @@ public partial class SettingsWindow : Window
         menu.IsOpen = true;
     }
 
+    /// <summary>v1.23：扫描桌面/开始菜单，批量添加程序到分组。</summary>
+    private void GroupItems_Scan_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dlg = new ScanAddWindow(_vm) { Owner = this };
+            dlg.ShowDialog();
+            RefreshItemsHeader();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"扫描失败：{ex.Message}", "QuickPanel",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     /// <summary>向当前分组添加条目（文件/文件夹/网址）。</summary>
     private void GroupItems_Add_Click(object sender, RoutedEventArgs e)
     {

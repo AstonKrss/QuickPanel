@@ -65,7 +65,8 @@ public partial class App : Application
             return;
         }
         _vm = new MainViewModel(_store);
-        _vm.LoadFromConfig();
+        // v1.23：首运时交给初始化向导播种，避免重复导入
+        _vm.LoadFromConfig(seedOnFirstRun: !_store.FirstRun);
         _vm.SaveConfig(); // 首运播种 / 迁移后立即持久化（F3/F43/F44）
 
         Theme.Apply(_store.Config); // v0.5：外观颜色令牌
@@ -123,9 +124,30 @@ public partial class App : Application
             catch { /* 预热失败不影响正常使用 */ }
         }));
 
-        // F42 v0.5：首次运行自动打开初始化引导
+        // F42 v0.5 / v1.23：首次运行显示初始化向导（欢迎→扫描勾选→热键→完成）
         if (_store.FirstRun)
-            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(OpenSettings));
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(ShowOnboarding));
+    }
+
+    /// <summary>v1.23：首次运行初始化向导。</summary>
+    private void ShowOnboarding()
+    {
+        try
+        {
+            var wizard = new OnboardingWindow(_vm!, ApplyHotkey);
+            wizard.ShowDialog();
+
+            // 向导结束后刷新界面（分组/钉选/热键可能变了）
+            _dock?.ApplyLayout();
+            _panel?.ApplyScale();
+            RebuildTrayMenu();
+        }
+        catch (Exception ex)
+        {
+            LogError(ex);
+            // 向导失败时退回设置窗口，保证用户能继续操作
+            try { OpenSettings(); } catch { /* 忽略 */ }
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
