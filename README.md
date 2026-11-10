@@ -58,6 +58,20 @@ dotnet publish -c Release -r win-x64 --self-contained false \
 
 运行需安装 [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。
 
+### 三种安装包（按要不要装运行时选）
+
+| 形态 | 大小 | 适用 |
+|---|---|---|
+| `dist/QuickPanel-v1.31.0-win-x64.zip` | 0.4 MB | 本机已装 .NET 8 桌面运行时 |
+| `dist/QuickPanel-v1.31.0-standalone-win-x64/` | 68 MB | 任何 Win10/11 x64，**无需运行时**；解压后双击「安装.bat」 |
+| `dist/QuickPanel-v1.31.0-Setup.exe` | 61 MB | 同上，但只有一个 exe；双击即装（静默安装并设为开机启动） |
+
+> 为什么有的包要 .NET：经典 WinForms 软件目标 .NET Framework 4.8（系统自带），
+> 而本项目用 .NET 8 —— 它不在 Windows 里，要么单独装，要么把运行时一起打包（后两种就是）。
+
+**自己打单文件 Setup.exe**：把 `QuickPanel.exe`（自包含版）、`install.ps1`、`uninstall.ps1`、`README.md`
+放进同一目录，用 Windows 自带的 IExpress 按 `dist/_sfx/setup.sed` 模板打包即可（安装逻辑全在 `install.ps1`）。
+
 ---
 
 ## 使用

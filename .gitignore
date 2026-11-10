@@ -27,3 +27,7 @@ desktop.ini
 dist/QuickPanel-v*-standalone*/
 dist/_standalone/
 dist/_standalone2/
+
+# 单文件安装器与 SFX 中间产物（61–68MB，本地分发，不进仓库）
+dist/_sfx/
+dist/QuickPanel-v*-Setup.exe
