@@ -55,7 +55,12 @@
                     <ListBox x:Name="GroupList" Margin="10,12"
                              Background="Transparent" BorderThickness="0"
                              ItemsSource="{Binding Groups}"
-                             SelectedItem="{Binding SelectedGroup}">
+                             SelectedItem="{Binding SelectedGroup}"
+                             PreviewMouseLeftButtonDown="GroupList_Down"
+                             PreviewMouseMove="GroupList_Move"
+                             AllowDrop="True"
+                             DragOver="GroupList_DragOver"
+                             Drop="GroupList_Drop">
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>

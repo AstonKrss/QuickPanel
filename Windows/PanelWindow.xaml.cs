@@ -238,6 +238,27 @@ public partial class PanelWindow : Window
         Top = Math.Max(wa.Top, Math.Min(top, wa.Bottom - Height));
     }
 
+    // ---------- v1.13：分组拖拽排序 ----------
+
+    private void GroupList_Down(object sender, MouseButtonEventArgs e)
+        => GroupDragHelper.OnDown(GroupList, e);
+
+    private void GroupList_Move(object sender, MouseEventArgs e)
+        => GroupDragHelper.TryStartDrag(GroupList, e);
+
+    private void GroupList_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent("QuickPanel.Group")
+            ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void GroupList_Drop(object sender, DragEventArgs e)
+    {
+        GroupDragHelper.OnDrop(GroupList, e, (g, idx) => _vm.MoveGroup(g, idx));
+        e.Handled = true;
+    }
+
     // ---------- F60 v0.6：搜索框 ----------
 
     private void Search_TextChanged(object sender, TextChangedEventArgs e)

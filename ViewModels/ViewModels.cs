@@ -376,6 +376,30 @@ public class MainViewModel : INotifyPropertyChanged
         SaveConfig();
     }
 
+    /// <summary>v1.13：拖拽排序 —— 把分组移动到指定索引。</summary>
+    public void MoveGroup(GroupVM group, int targetIndex)
+    {
+        var from = Groups.IndexOf(group);
+        if (from < 0) return;
+        var to = Math.Clamp(targetIndex, 0, Groups.Count - 1);
+        if (from == to) return;
+        Groups.Move(from, to);
+        SaveConfig();
+    }
+
+    /// <summary>v1.13：按光标位置计算目标索引并移动（供拖拽使用）。</summary>
+    public void MoveGroupToPosition(GroupVM group, double cursorY, IList<GroupVM> ordered)
+    {
+        var target = -1;
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            if (ReferenceEquals(ordered[i], group)) continue;
+            target = i;
+            break;
+        }
+        if (target >= 0) MoveGroup(group, target);
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)

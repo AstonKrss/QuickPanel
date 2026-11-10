@@ -448,6 +448,26 @@ public partial class SettingsWindow : Window
 
     // ---------- 分组管理 ----------
 
+    // v1.13：分组拖拽排序
+    private void GroupEdit_Down(object sender, MouseButtonEventArgs e)
+        => GroupDragHelper.OnDown(GroupEditList, e);
+
+    private void GroupEdit_Move(object sender, MouseEventArgs e)
+        => GroupDragHelper.TryStartDrag(GroupEditList, e);
+
+    private void GroupEdit_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent("QuickPanel.Group")
+            ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void GroupEdit_Drop(object sender, DragEventArgs e)
+    {
+        GroupDragHelper.OnDrop(GroupEditList, e, (g, idx) => _vm.MoveGroup(g, idx));
+        e.Handled = true;
+    }
+
     private void Group_Add_Click(object sender, RoutedEventArgs e)
     {
         _vm.AddGroup($"新分组{_vm.Groups.Count + 1}");

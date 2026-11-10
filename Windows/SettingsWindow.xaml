@@ -454,7 +454,12 @@
                                      Background="{DynamicResource SbField}" BorderBrush="{DynamicResource SbFieldBorder}" BorderThickness="1"
                                      Foreground="{DynamicResource SbText}"
                                      DisplayMemberPath="Name"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     PreviewMouseLeftButtonDown="GroupEdit_Down"
+                                     PreviewMouseMove="GroupEdit_Move"
+                                     AllowDrop="True"
+                                     DragOver="GroupEdit_DragOver"
+                                     Drop="GroupEdit_Drop">
                                 <ListBox.ItemContainerStyle>
                                     <Style TargetType="ListBoxItem">
                                         <Setter Property="Foreground" Value="{DynamicResource SbText}"/>
