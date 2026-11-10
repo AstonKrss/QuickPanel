@@ -31,8 +31,8 @@ public partial class PanelWindow : Window
         _vm = vm;
         DataContext = vm;
         // v1.1：acrylic=毛玻璃背板；transparent/invisible=分层窗口（ AllowsTransparency）
-        _transparent = !string.Equals(vm.Store.Config.Settings.BackgroundMode, "acrylic", StringComparison.OrdinalIgnoreCase);
-        if (_transparent) AllowsTransparency = true;
+        _transparent = true; // v1.27：统一使用分层窗口
+        AllowsTransparency = true;
         // v1.1：透明/隐形模式关闭 DWM 玻璃垫层（整窗"雾膜"根源，见 DockBarWindow）
         var chrome = WindowChrome.GetWindowChrome(this);
         if (chrome != null)

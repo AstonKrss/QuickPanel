@@ -72,15 +72,15 @@ public partial class OnboardingWindow : Window
             var ok = e.Data.GetDataPresent(DragFormat);
             e.Effects = ok ? DragDropEffects.Move : DragDropEffects.None;
             UnassignedZone.Background = new SolidColorBrush(ok
-                ? Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF)
-                : Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+                ? Color.FromArgb(0x30, 0x7C, 0x6F, 0xFF)
+                : Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
             e.Handled = true;
         };
         UnassignedZone.DragLeave += (_, _) =>
-            UnassignedZone.Background = new SolidColorBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+            UnassignedZone.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
         UnassignedZone.Drop += (_, e) =>
         {
-            UnassignedZone.Background = new SolidColorBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+            UnassignedZone.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
             if (e.Data.GetData(DragFormat) is ScannedApp app) ReturnToUnassigned(app);
             e.Handled = true;
         };
@@ -248,7 +248,7 @@ public partial class OnboardingWindow : Window
         {
             Text = app.Item.Name,
             FontSize = 10.5,
-            Foreground = new SolidColorBrush(Color.FromRgb(0xD0, 0xD2, 0xDA)),
+            Foreground = new SolidColorBrush(Color.FromRgb(0x2A, 0x2F, 0x3A)),
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -383,7 +383,7 @@ public partial class OnboardingWindow : Window
             {
                 Text = "还没有分组。\n点右上角「+ 新建分组」，起个名字，\n然后把左边的程序拖进来。",
                 FontSize = 12,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x90, 0xA0)),
+                Foreground = new SolidColorBrush(Color.FromRgb(0x7C, 0x82, 0x90)),
                 TextWrapping = TextWrapping.Wrap,
                 LineHeight = 20,
                 Margin = new Thickness(4, 10, 0, 0),
@@ -407,7 +407,7 @@ public partial class OnboardingWindow : Window
             Text = $"{title}  ·  {count}",
             FontSize = 12,
             FontWeight = FontWeights.SemiBold,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x9A, 0xA0, 0xAE)),
+            Foreground = new SolidColorBrush(Color.FromRgb(0x5A, 0x61, 0x72)),
         };
 
         var content = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
@@ -460,7 +460,7 @@ public partial class OnboardingWindow : Window
             {
                 Text = "把左边的程序拖到这里",
                 FontSize = 11.5,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x6A, 0x70, 0x80)),
+                Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x8F, 0x9C)),
                 Margin = new Thickness(2, 2, 0, 2),
             });
         }
@@ -471,9 +471,9 @@ public partial class OnboardingWindow : Window
 
         var zone = new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF)),
+            Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xF2, 0xF3, 0xF7)),
             CornerRadius = new CornerRadius(9),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x28, 0xFF, 0xFF, 0xFF)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x1F, 0x00, 0x00, 0x00)),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(12, 10, 12, 8),
             Margin = new Thickness(0, 0, 0, 8),
@@ -487,14 +487,14 @@ public partial class OnboardingWindow : Window
             e.Effects = ok ? DragDropEffects.Copy : DragDropEffects.None;
             zone.Background = new SolidColorBrush(ok
                 ? Color.FromArgb(0x33, 0x7C, 0x6F, 0xFF)
-                : Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF));
+                : Color.FromArgb(0xFF, 0xF2, 0xF3, 0xF7));
             e.Handled = true;
         };
         zone.DragLeave += (_, _) =>
-            zone.Background = new SolidColorBrush(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF));
+            zone.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xF2, 0xF3, 0xF7));
         zone.Drop += (_, e) =>
         {
-            zone.Background = new SolidColorBrush(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF));
+            zone.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xF2, 0xF3, 0xF7));
             if (e.Data.GetData(DragFormat) is ScannedApp app) onDrop(app);
             e.Handled = true;
         };

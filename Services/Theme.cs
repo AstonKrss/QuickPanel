@@ -30,19 +30,25 @@ namespace QuickPanel.Services;
         var surface = ParseColor(config.Settings.SurfaceColor, Color.FromArgb(0xC0, 0x15, 0x15, 0x18));
         var accent = ParseColor(config.Settings.AccentColor, Color.FromRgb(0x7C, 0x6F, 0xFF));
 
-        var invisibleMode = string.Equals(config.Settings.BackgroundMode, "invisible", StringComparison.OrdinalIgnoreCase);
+        var mode = config.Settings.BackgroundMode;
+        var invisibleMode = string.Equals(mode, "invisible", StringComparison.OrdinalIgnoreCase);
+        var acrylicMode = string.Equals(mode, "acrylic", StringComparison.OrdinalIgnoreCase);
 
         // v0.9：alpha=0 的底色会被系统判定为整窗点击穿透，钳制到 1（肉眼不可见）
         if (surface.A == 0)
             surface = Color.FromArgb(1, surface.R, surface.G, surface.B);
 
-        // v1.1：「完全隐形」模式一键无底板（不再依赖用户手算 AA）；全透明 + AA≤20 同效
+        // v1.1：完全隐形模式一键无底板；全透明 + AA≤20 同效
         NearInvisible = invisibleMode
-            || (string.Equals(config.Settings.BackgroundMode, "transparent", StringComparison.OrdinalIgnoreCase)
+            || (string.Equals(mode, "transparent", StringComparison.OrdinalIgnoreCase)
                 && surface.A <= 0x20);
 
         if (invisibleMode)
             surface = Color.FromArgb(1, 0, 0, 0); // 隐形薄膜：可点击但不可见
+
+        // v1.27："毛玻璃"改为分层窗口内的半透明深色板（见下方说明），固定视觉
+        if (acrylicMode)
+            surface = Color.FromArgb(0xD8, 0x1B, 0x1B, 0x20);
 
         res["SurfaceOverlayBrush"] = new SolidColorBrush(surface);
         res["AccentBrush"] = new SolidColorBrush(accent);

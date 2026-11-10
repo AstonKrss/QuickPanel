@@ -42,10 +42,10 @@ public partial class DockBarWindow : Window
         _openSettings = openSettings;
         DataContext = vm;
         // v1.1：acrylic=毛玻璃背板；transparent/invisible=分层窗口
-        _transparent = !string.Equals(vm.Store.Config.Settings.BackgroundMode, "acrylic", StringComparison.OrdinalIgnoreCase);
+        _transparent = true; // v1.27：统一使用分层窗口（DWM 背板会涂满整个窗口矩形）
         _plate = vm.Store.Config.Settings.DockIconPlate;
         _bare = !_plate; // v0.9：纯图标 = 整条 Dock 无底，需分层窗口
-        if (_transparent || _bare) AllowsTransparency = true;
+        AllowsTransparency = true;
         // v1.1：透明/隐形模式下关闭 DWM 玻璃垫层——GlassFrameThickness=-1 会让整个窗口
         // 矩形下垫一层玻璃膜（比壁纸亮/雾的"色差矩形"根源），分层透明不需要它
         var chrome = WindowChrome.GetWindowChrome(this);
@@ -80,32 +80,25 @@ public partial class DockBarWindow : Window
 
         SourceInitialized += (_, _) =>
         {
+            // v1.27：所有模式统一使用分层窗口（AllowsTransparency），不再用 DWM 背板。
+            // 原因：DWM SystemBackdrop 会把**整个窗口矩形**涂成玻璃，而我们为了悬停放大
+            // 需要在胶囊上方留一段透明余量 —— 那一段也会被涂成玻璃，看起来就是
+            // "胶囊上下多出一大块没用的地方"。真毛玻璃在这种布局下无解，改为
+            // 分层窗口内的半透明色板（视觉接近，且不会有多余矩形）。
             var invisible = Theme.NearInvisible;
 
-            // v1.2：分层窗口（透明/隐形/纯图标）一律不碰 DWM 属性——
-            // CAPTION/BORDER/CORNER 会在分层窗口上留下可见的圆角矩形色块（"雾膜"根因）
-            if (_bare || _transparent)
+            if (_bare)
             {
-                if (_bare)
-                {
-                    // 纯图标：无底无框；alpha=1 隐形薄膜保点击（alpha=0 会穿透）
-                    PlateBorder.Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
-                    PlateBorder.BorderThickness = new Thickness(0);
-                }
-                else if (invisible)
-                {
-                    PlateBorder.BorderThickness = new Thickness(0);
-                }
-                return;
+                // 纯图标：无底无框；alpha=1 隐形薄膜保点击（alpha=0 会穿透）
+                PlateBorder.Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+                PlateBorder.BorderThickness = new Thickness(0);
+            }
+            else if (invisible)
+            {
+                PlateBorder.BorderThickness = new Thickness(0);
             }
 
-            // 毛玻璃模式：DWM 背板 + 圆角
-            var level = Acrylic.Apply(new WindowInteropHelper(this).Handle, useBackdrop: true);
-            if (level == AcrylicLevel.Solid)
-                PlateBorder.Background = (Brush)FindResource("SolidSurfaceBrush");
-
-            // Dock 一律不挂 DropShadowEffect —— Effect 的中间位图会以 RootBorder 边界
-            // 裁切内容，图钉上浮放大超出的部分正是被它削掉的（§6.3）
+            // Dock 一律不挂 DropShadowEffect —— Effect 的中间位图会以边界裁切内容（§6.3）
         };
     }
 

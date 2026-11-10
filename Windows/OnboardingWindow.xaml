@@ -13,9 +13,9 @@
     <Window.Resources>
         <!-- 深色幽灵按钮 -->
         <Style x:Key="GhostButton" TargetType="Button">
-            <Setter Property="Background" Value="#33FFFFFF"/>
-            <Setter Property="Foreground" Value="#FFDCDDE2"/>
-            <Setter Property="BorderBrush" Value="#55FFFFFF"/>
+            <Setter Property="Background" Value="#FFF0F1F6"/>
+            <Setter Property="Foreground" Value="#FF2A2F3A"/>
+            <Setter Property="BorderBrush" Value="#33000000"/>
             <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="12"/>
@@ -30,10 +30,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#4DFFFFFF"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#FFE4E6F0"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#26FFFFFF"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#FFD8DBE6"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -81,14 +81,14 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#2EFFFFFF"/>
+                    <Setter Property="Background" Value="#0F000000"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <Border x:Name="RootCard" CornerRadius="14" Background="#FF151518"
-            BorderBrush="#33FFFFFF" BorderThickness="1">
+    <Border x:Name="RootCard" CornerRadius="14" Background="#FFF8F8FB"
+            BorderBrush="#1A000000" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -104,16 +104,16 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock x:Name="TitleText" Text="欢迎使用 QuickPanel"
-                               FontSize="21" FontWeight="SemiBold" Foreground="#FFECEDF2"/>
+                               FontSize="21" FontWeight="SemiBold" Foreground="#FF1B1F2A"/>
                     <TextBlock x:Name="SubtitleText" Text="几步完成配置，马上开始使用"
-                               FontSize="12.5" Foreground="#FF9AA0AE" Margin="0,5,0,0"/>
+                               FontSize="12.5" Foreground="#FF8A8F9C" Margin="0,5,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top"
                             x:Name="StepDots">
                     <Ellipse x:Name="Dot1" Width="8" Height="8" Fill="#FF7C6FFF" Margin="4,0"/>
-                    <Ellipse x:Name="Dot2" Width="8" Height="8" Fill="#33FFFFFF" Margin="4,0"/>
-                    <Ellipse x:Name="Dot3" Width="8" Height="8" Fill="#33FFFFFF" Margin="4,0"/>
-                    <Ellipse x:Name="Dot4" Width="8" Height="8" Fill="#33FFFFFF" Margin="4,0"/>
+                    <Ellipse x:Name="Dot2" Width="8" Height="8" Fill="#33000000" Margin="4,0"/>
+                    <Ellipse x:Name="Dot3" Width="8" Height="8" Fill="#33000000" Margin="4,0"/>
+                    <Ellipse x:Name="Dot4" Width="8" Height="8" Fill="#33000000" Margin="4,0"/>
                 </StackPanel>
             </Grid>
 
@@ -123,24 +123,24 @@
                 <!-- ═══ 1 欢迎 ═══ -->
                 <Grid x:Name="PageWelcome">
                     <StackPanel VerticalAlignment="Center">
-                        <Border Background="#14FFFFFF" CornerRadius="12" Padding="26,22">
+                        <Border Background="#FFFFFFFF" CornerRadius="12" Padding="26,22">
                             <StackPanel>
-                                <TextBlock Text="QuickPanel 是一个常驻屏幕底部的快捷启动面板。"
-                                           FontSize="14.5" Foreground="#FFDCDDE2" TextWrapping="Wrap"/>
-                                <TextBlock Margin="0,16,0,0" FontSize="13" Foreground="#FFB9BDC7"
+                                <TextBlock Text="把常用程序收进一个面板，需要时按一下就能打开。"
+                                           FontSize="14.5" Foreground="#FF2A2F3A" TextWrapping="Wrap"/>
+                                <TextBlock Margin="0,16,0,0" FontSize="13" Foreground="#FF5A6172"
                                            TextWrapping="Wrap" LineHeight="25">
-                                    <Run Text="· 按 "/><Run Text="Alt+Q" FontWeight="SemiBold" Foreground="#FF7C6FFF"/><Run Text=" 随时呼出分组面板"/>
+                                    <Run Text="按 "/><Run Text="Alt+Q" FontWeight="SemiBold" Foreground="#FF7C6FFF"/><Run Text=" 呼出面板，点图标即启动"/>
                                     <LineBreak/>
-                                    <Run Text="· 鼠标移到屏幕底部，Dock 上的图标会放大，点一下就启动"/>
+                                    <Run Text="屏幕底部的 Dock 会放大图标，一眼就能找到"/>
                                     <LineBreak/>
-                                    <Run Text="· 分组由你自己创建、自己起名，程序自己拖进去"/>
+                                    <Run Text="分组和内容都由你决定，随时能改"/>
                                     <LineBreak/>
-                                    <Run Text="· 全部数据存在本地，不联网、不上传"/>
+                                    <Run Text="数据只保存在这台电脑上"/>
                                 </TextBlock>
                             </StackPanel>
                         </Border>
-                        <TextBlock Text="接下来会把你桌面上的程序列出来，你只需要把它们拖进自己的分组里。"
-                                   Margin="0,20,0,0" FontSize="12.5" Foreground="#FF9AA0AE"
+                        <TextBlock Text="下一步会列出桌面上的程序，把它们拖进你想放的分组即可。"
+                                   Margin="0,20,0,0" FontSize="12.5" Foreground="#FF8A8F9C"
                                    TextWrapping="Wrap" TextAlignment="Center"/>
                     </StackPanel>
                 </Grid>
@@ -154,8 +154,8 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- 左：未整理的程序（也可作为"拖回来"的落点） -->
-                    <Border x:Name="UnassignedZone" Grid.Column="0" Background="#0FFFFFFF" CornerRadius="10"
-                            BorderBrush="#22FFFFFF" BorderThickness="1" AllowDrop="True">
+                    <Border x:Name="UnassignedZone" Grid.Column="0" Background="#FFFFFFFF" CornerRadius="10"
+                            BorderBrush="#1A000000" BorderThickness="1" AllowDrop="True">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -166,7 +166,7 @@
                             <Grid Grid.Row="0" Margin="14,12,14,8">
                                 <TextBlock x:Name="UnassignedHeader" Text="桌面上的程序"
                                            FontSize="12.5" FontWeight="SemiBold"
-                                           Foreground="#FFB9BDC7" VerticalAlignment="Center"/>
+                                           Foreground="#FF5A6172" VerticalAlignment="Center"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                     <Button x:Name="RescanBtn" Content="刷新" Click="Rescan_Click"
                                             Style="{StaticResource GhostButton}" Margin="0,0,6,0"/>
@@ -179,13 +179,13 @@
                             <Grid Grid.Row="1" Margin="14,0,14,8">
                                 <TextBox x:Name="FilterBox" Height="30"
                                          VerticalContentAlignment="Center" FontSize="12"
-                                         Background="#26FFFFFF" Foreground="#FFDCDDE2"
-                                         BorderBrush="#44FFFFFF" CaretBrush="#FFDCDDE2"
+                                         Background="#FFFFFFFF" Foreground="#FF2A2F3A"
+                                         BorderBrush="#33000000" CaretBrush="#FFDCDDE2"
                                          Padding="8,0"
                                          TextChanged="Filter_TextChanged"/>
                                 <TextBlock x:Name="FilterHint" Text="按名称筛选…"
                                            Margin="11,0,0,0" VerticalAlignment="Center"
-                                           FontSize="12" Foreground="#FF6A7080"
+                                           FontSize="12" Foreground="#FF8A8F9C"
                                            IsHitTestVisible="False"/>
                             </Grid>
 
@@ -200,7 +200,7 @@
                                     </ItemsControl>
                                     <TextBlock x:Name="EmptyHint" Text=""
                                                Margin="16,10,16,16" FontSize="12"
-                                               Foreground="#FF8A90A0" TextWrapping="Wrap"
+                                               Foreground="#FF7C8290" TextWrapping="Wrap"
                                                Visibility="Collapsed"/>
                                 </StackPanel>
                             </ScrollViewer>
@@ -208,8 +208,8 @@
                     </Border>
 
                     <!-- 右：常用 + 自建分组 -->
-                    <Border Grid.Column="2" Background="#0FFFFFFF" CornerRadius="10"
-                            BorderBrush="#22FFFFFF" BorderThickness="1">
+                    <Border Grid.Column="2" Background="#FFFFFFFF" CornerRadius="10"
+                            BorderBrush="#1A000000" BorderThickness="1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -218,7 +218,7 @@
 
                             <Grid Grid.Row="0" Margin="14,12,14,8">
                                 <TextBlock Text="我的分组" FontSize="12.5" FontWeight="SemiBold"
-                                           Foreground="#FFB9BDC7" VerticalAlignment="Center"/>
+                                           Foreground="#FF5A6172" VerticalAlignment="Center"/>
                                 <Button x:Name="NewGroupBtn" Content="+ 新建分组"
                                         Click="NewGroup_Click"
                                         HorizontalAlignment="Right"
@@ -236,17 +236,17 @@
                 <!-- ═══ 3 选项 ═══ -->
                 <Grid x:Name="PageOptions" Visibility="Collapsed">
                     <StackPanel VerticalAlignment="Center">
-                        <Border Background="#14FFFFFF" CornerRadius="12" Padding="26,20">
+                        <Border Background="#FFFFFFFF" CornerRadius="12" Padding="26,20">
                             <StackPanel>
                                 <TextBlock Text="呼出快捷键" FontSize="13.5" FontWeight="SemiBold"
-                                           Foreground="#FFDCDDE2"/>
+                                           Foreground="#FF2A2F3A"/>
                                 <TextBlock Text="常用：Alt+Q、Ctrl+Alt+Space、Shift+F1"
-                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF9AA0AE"/>
+                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF8A8F9C"/>
                                 <TextBox x:Name="HotkeyBox" Height="38" Margin="0,10,0,0"
                                          FontSize="15" VerticalContentAlignment="Center"
                                          HorizontalContentAlignment="Center"
-                                         Background="#26FFFFFF" Foreground="#FFECEDF2"
-                                         BorderBrush="#55FFFFFF" CaretBrush="#FFECEDF2"
+                                         Background="#FFFFFFFF" Foreground="#FF1B1F2A"
+                                         BorderBrush="#33000000" CaretBrush="#FFECEDF2"
                                          Text="Alt+Q"/>
                                 <TextBlock x:Name="HotkeyError" Text="" Margin="0,8,0,0"
                                            FontSize="12" Foreground="#FFFF6B6B"
@@ -254,16 +254,16 @@
 
                                 <CheckBox x:Name="AutostartCheck" Content="开机自动启动 QuickPanel"
                                           Margin="0,20,0,0" FontSize="13"
-                                          Foreground="#FFDCDDE2" Cursor="Hand"/>
+                                          Foreground="#FF2A2F3A" Cursor="Hand"/>
                                 <TextBlock Text="勾选后登录 Windows 时会自动运行，不用每次手动打开。"
-                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF8A90A0"
+                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF7C8290"
                                            TextWrapping="Wrap"/>
 
                                 <CheckBox x:Name="DockAlwaysCheck" Content="Dock 常驻显示（不自动隐藏）"
                                           Margin="0,16,0,0" FontSize="13" IsChecked="True"
-                                          Foreground="#FFDCDDE2" Cursor="Hand"/>
+                                          Foreground="#FF2A2F3A" Cursor="Hand"/>
                                 <TextBlock Text="关闭后，切到别的软件时 Dock 会自动隐藏，鼠标移到屏幕底部才出现。"
-                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF8A90A0"
+                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF7C8290"
                                            TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
@@ -273,44 +273,44 @@
                 <!-- ═══ 4 外观 ═══ -->
                 <Grid x:Name="PageAppearance" Visibility="Collapsed">
                     <StackPanel VerticalAlignment="Center">
-                        <Border Background="#14FFFFFF" CornerRadius="12" Padding="26,20">
+                        <Border Background="#FFFFFFFF" CornerRadius="12" Padding="26,20">
                             <StackPanel>
                                 <TextBlock Text="背景样式" FontSize="13" FontWeight="SemiBold"
-                                           Foreground="#FFDCDDE2"/>
+                                           Foreground="#FF2A2F3A"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                                     <RadioButton x:Name="AcrylicRadio" Content="毛玻璃"
-                                                 GroupName="bg" Foreground="#FFDCDDE2" FontSize="13"
+                                                 GroupName="bg" Foreground="#FF2A2F3A" FontSize="13"
                                                  Margin="0,0,20,0" Checked="Appearance_Changed"/>
                                     <RadioButton x:Name="TransparentRadio" Content="半透明"
-                                                 GroupName="bg" Foreground="#FFDCDDE2" FontSize="13"
+                                                 GroupName="bg" Foreground="#FF2A2F3A" FontSize="13"
                                                  Margin="0,0,20,0" Checked="Appearance_Changed"/>
                                     <RadioButton x:Name="InvisibleRadio" Content="完全透明"
-                                                 GroupName="bg" Foreground="#FFDCDDE2" FontSize="13"
+                                                 GroupName="bg" Foreground="#FF2A2F3A" FontSize="13"
                                                  Checked="Appearance_Changed"/>
                                 </StackPanel>
                                 <TextBlock Text="完全透明 = 没有底板，图标直接浮在壁纸上"
-                                           Margin="0,7,0,0" FontSize="11.5" Foreground="#FF8A90A0"/>
+                                           Margin="0,7,0,0" FontSize="11.5" Foreground="#FF7C8290"/>
 
                                 <TextBlock Text="强调色" FontSize="13" FontWeight="SemiBold"
-                                           Foreground="#FFDCDDE2" Margin="0,20,0,0"/>
+                                           Foreground="#FF2A2F3A" Margin="0,20,0,0"/>
                                 <StackPanel x:Name="AccentPalette" Orientation="Horizontal" Margin="0,10,0,0"/>
 
                                 <TextBlock Text="Dock 文字颜色" FontSize="13" FontWeight="SemiBold"
-                                           Foreground="#FFDCDDE2" Margin="0,20,0,0"/>
+                                           Foreground="#FF2A2F3A" Margin="0,20,0,0"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                    <TextBlock Text="#  " FontSize="13" Foreground="#FF9AA0AE"
+                                    <TextBlock Text="#  " FontSize="13" Foreground="#FF8A8F9C"
                                                VerticalAlignment="Center"/>
                                     <TextBox x:Name="TextColorBox" Width="110" Height="30"
                                              VerticalContentAlignment="Center" FontSize="12.5"
-                                             Background="#26FFFFFF" Foreground="#FFDCDDE2"
-                                             BorderBrush="#55FFFFFF" CaretBrush="#FFDCDDE2"
+                                             Background="#FFFFFFFF" Foreground="#FF2A2F3A"
+                                             BorderBrush="#33000000" CaretBrush="#FFDCDDE2"
                                              Padding="8,0"
                                              TextChanged="TextColor_Changed"/>
                                     <StackPanel x:Name="TextColorPalette" Orientation="Horizontal"
                                                 Margin="10,0,0,0"/>
                                 </StackPanel>
                                 <TextBlock Text="分组名、时钟、CPU 显示都用这个颜色"
-                                           Margin="0,6,0,0" FontSize="11.5" Foreground="#FF8A90A0"/>
+                                           Margin="0,6,0,0" FontSize="11.5" Foreground="#FF7C8290"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -319,19 +319,19 @@
                 <!-- ═══ 5 完成 ═══ -->
                 <Grid x:Name="PageDone" Visibility="Collapsed">
                     <StackPanel VerticalAlignment="Center">
-                        <Border Background="#1A7C6FFF" CornerRadius="12" Padding="26,20">
+                        <Border Background="#FFF1EFFF" CornerRadius="12" Padding="26,20">
                             <StackPanel>
                                 <TextBlock Text="配置完成！" FontSize="17" FontWeight="SemiBold"
-                                           Foreground="#FFECEDF2"/>
+                                           Foreground="#FF1B1F2A"/>
                                 <TextBlock x:Name="DoneSummaryText" Margin="0,10,0,0"
-                                           FontSize="13" Foreground="#FFDCDDE2" TextWrapping="Wrap"
+                                           FontSize="13" Foreground="#FF2A2F3A" TextWrapping="Wrap"
                                            LineHeight="22"/>
                             </StackPanel>
                         </Border>
 
                         <TextBlock Text="现在就可以用了" Margin="0,22,0,8"
-                                   FontSize="14" FontWeight="SemiBold" Foreground="#FFDCDDE2"/>
-                        <TextBlock FontSize="12.5" Foreground="#FFB9BDC7" TextWrapping="Wrap" LineHeight="24">
+                                   FontSize="14" FontWeight="SemiBold" Foreground="#FF2A2F3A"/>
+                        <TextBlock FontSize="12.5" Foreground="#FF5A6172" TextWrapping="Wrap" LineHeight="24">
                             <Run Text="· 按 "/><Run x:Name="DoneHotkeyRun" Text="Alt+Q" FontWeight="SemiBold" Foreground="#FF7C6FFF"/><Run Text=" 呼出面板，左右点分组切换"/>
                             <LineBreak/>
                             <Run Text="· 鼠标移到屏幕底部，Dock 上的图标会放大；点图标即可启动"/>
