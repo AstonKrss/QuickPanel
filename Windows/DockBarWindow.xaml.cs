@@ -604,15 +604,16 @@ public partial class DockBarWindow : Window
     private void Pin_Down(object sender, MouseButtonEventArgs e)
     {
         if (sender is Border border && e.LeftButton == MouseButtonState.Pressed)
-        {
             _pinDragAnchors[border] = e.GetPosition(border);
-            _dragStartScreen = PointToScreen(e.GetPosition(this));
-        }
     }
 
-    /// <summary>v1.12：拖拽起点（屏幕坐标），用于判断是内部排序还是拖出到桌面。</summary>
-    private Point _dragStartScreen;
-
+    /// <summary>
+    /// v1.17：标准 DragDrop 拖拽 —— 修复此前"排序不生效"（容器重建后引用失效 + 每像素写盘）。
+    /// 行为：
+    ///   · 在 Dock 内拖 → 重排
+    ///   · 拖出 Dock 上方 → 取消钉选（移除）
+    ///   · 拖到桌面 → 生成副本（保留）
+    /// </summary>
     private void Pin_MouseMove(object sender, MouseEventArgs e)
     {
         if (sender is not Border border || !_pinDragAnchors.TryGetValue(border, out var anchor)) return;
@@ -626,51 +627,141 @@ public partial class DockBarWindow : Window
         if (Math.Abs(pos.X - anchor.X) + Math.Abs(pos.Y - anchor.Y)
             < SystemParameters.MinimumHorizontalDragDistance) return;
 
+        _pinDragAnchors.Remove(border);
         if (border.Tag is not ItemVM item) return;
 
-        // v1.12：先进入内部排序模式；拖出 Dock 垂直范围才转为拖到桌面
-        var screen = PointToScreen(e.GetPosition(this));
-        var dockRect = GetScreenRect();
-        var outsideVertically = screen.Y < dockRect.Top - 24 || screen.Y > dockRect.Bottom + 24;
+        // 打包为自定义数据：内部排序用 + 同时提供 FileDrop 供拖到桌面
+        var data = new DataObject();
+        data.SetData("QuickPanel.Pin", item);
+        if (File.Exists(item.Model.Target) || Directory.Exists(item.Model.Target))
+            data.SetData(DataFormats.FileDrop, new[] { item.Model.Target });
 
-        if (outsideVertically)
+        // v1.17：拖拽结束时若光标已离开 Dock 且未落在任何目标上 → 取消钉选
+        var target = DragDrop.DoDragDrop(border, data, DragDropEffects.Move | DragDropEffects.Copy);
+
+        // DoDragDrop 返回 None 表示没有被任何目标接受（拖到 Dock 外空白处松开）
+        if (target == DragDropEffects.None)
         {
-            // 拖出 Dock → 走 OLE 拖到桌面
-            _pinDragAnchors.Remove(border);
-            StartFileDrag(border, item.Model.Target);
+            var cur = GetCursorScreenPoint();
+            var dockRect = GetScreenRect();
+            var outside = cur.Y < dockRect.Top - 4 || cur.Y > dockRect.Bottom + 4
+                          || cur.X < dockRect.Left - 4 || cur.X > dockRect.Right + 4;
+            if (outside)
+            {
+                _vm.Unpin(item); // 拖离 Dock → 移除这一个，后面的自动前移
+            }
+        }
+    }
+
+    // ---------- v1.17：Dock 内拖拽排序 / 拖出取消钉选 ----------
+
+    /// <summary>DragOver 实时记录光标下的图钉（Drop 时直接用，避免坐标反查失败）。</summary>
+    private ItemVM? _dragOverTarget;
+
+    private void PinHost_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent("QuickPanel.Pin"))
+        {
+            e.Effects = DragDropEffects.Move;          // Dock 内部重排
+            try { _dragOverTarget = FindPinAtPoint(e.GetPosition(PinHost)); }
+            catch { _dragOverTarget = null; }
+        }
+        else if (e.Data.GetDataPresent("QuickPanel.Item"))
+            e.Effects = DragDropEffects.Copy;          // 面板条目 → 钉选
+        else if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            e.Effects = DragDropEffects.Copy;          // 资源管理器 → 钉选
+        else
+            e.Effects = DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    /// <summary>v1.17：按相对 PinHost 的横向坐标找图钉（图钉水平排列，纵向放宽）。</summary>
+    private ItemVM? FindPinAtPoint(Point ptInHost)
+    {
+        for (var i = 0; i < PinHost.Items.Count; i++)
+        {
+            if (PinHost.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement c) continue;
+            if (FindDescendant<Border>(c) is not { } b) continue;
+            try
+            {
+                var origin = b.TranslatePoint(new Point(0, 0), PinHost);
+                if (ptInHost.X >= origin.X - 2 && ptInHost.X <= origin.X + b.ActualWidth + 2)
+                    return PinHost.Items[i] as ItemVM;
+            }
+            catch { /* 忽略 */ }
+        }
+        return null;
+    }
+
+    private void PinHost_Drop(object sender, DragEventArgs e)
+    {
+        // 场景 1：Dock 内部重排
+        if (e.Data.GetData("QuickPanel.Pin") is ItemVM dragged)
+        {
+            var target = _dragOverTarget ?? FindPinAtPoint(e.GetPosition(PinHost));
+            _dragOverTarget = null;
+
+            if (target != null && !ReferenceEquals(target, dragged))
+            {
+                var from = _vm.DockPins.IndexOf(dragged);
+                var to = _vm.DockPins.IndexOf(target);
+                if (from >= 0 && to >= 0 && from != to)
+                {
+                    _vm.DockPins.Move(from, to);
+                    _vm.SaveConfig();
+                }
+            }
+            e.Handled = true;
             return;
         }
 
-        // 内部排序：按光标 X 计算目标索引
-        ReorderPinToCursor(item, screen.X);
+        // 场景 2：从面板拖来的条目 → 钉选（保留其名称/参数/管理员设置）
+        if (e.Data.GetData("QuickPanel.Item") is ItemVM panelItem)
+        {
+            _vm.PinExistingItem(panelItem);
+            e.Handled = true;
+            return;
+        }
+
+        // 场景 3：从资源管理器拖入文件 → 钉选
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
+        {
+            _vm.PinToDock(files);
+            e.Handled = true;
+        }
     }
 
-    /// <summary>v1.12：把图钉移动到光标所在的槽位。</summary>
-    private void ReorderPinToCursor(ItemVM dragged, double screenX)
+    /// <summary>找到屏幕坐标下的图钉条目。</summary>
+    private ItemVM? FindPinAtScreenPoint(Point screenPt)
     {
-        try
+        for (var i = 0; i < PinHost.Items.Count; i++)
         {
-            var target = -1;
-            for (var i = 0; i < PinHost.Items.Count; i++)
+            if (PinHost.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement c) continue;
+            if (FindDescendant<Border>(c) is not { } b) continue;
+            try
             {
-                if (PinHost.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement c) continue;
-                if (FindDescendant<Border>(c) is not { } b) continue;
                 var origin = b.PointToScreen(new Point(0, 0));
-                if (screenX >= origin.X && screenX <= origin.X + b.ActualWidth)
-                {
-                    target = i;
-                    break;
-                }
+                var rect = new Rect(origin, new Size(b.ActualWidth, b.ActualHeight));
+                if (rect.Contains(screenPt)) return PinHost.Items[i] as ItemVM;
             }
-            if (target < 0) return;
-
-            var from = _vm.DockPins.IndexOf(dragged);
-            if (from < 0 || from == target) return;
-
-            _vm.DockPins.Move(from, target);
-            _vm.SaveConfig();
+            catch { /* 忽略 */ }
         }
-        catch { /* 排序失败忽略 */ }
+        return null;
+    }
+
+    private static Point GetCursorScreenPoint()
+    {
+        Win32.GetCursorPos(out var p);
+        return new Point(p.X, p.Y);
+    }
+
+    /// <summary>
+    /// v1.17：Dock 自己作为放下目标时，若光标已离开 Dock 上方 → 取消钉选。
+    /// 处理"把谷歌浏览器拖走，位置少一个"的场景。
+    /// </summary>
+    private void Root_DragLeave(object sender, DragEventArgs e)
+    {
+        RootBorder.BorderBrush = (Brush)FindResource("HairlineBrush");
     }
 
     private void StartFileDrag(FrameworkElement source, string target)

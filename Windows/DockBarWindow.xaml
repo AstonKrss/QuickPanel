@@ -84,7 +84,10 @@
 
             <!-- F22/F23：钉选图标 + 弹钢琴放大（v0.5 支持拖出） -->
             <ItemsControl x:Name="PinHost" ItemsSource="{Binding DockPins}" VerticalAlignment="Center"
-                          ClipToBounds="False">
+                          ClipToBounds="False"
+                          AllowDrop="True"
+                          DragOver="PinHost_DragOver"
+                          Drop="PinHost_Drop">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Orientation="Horizontal" ClipToBounds="False"/>

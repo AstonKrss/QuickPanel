@@ -249,6 +249,34 @@ public class MainViewModel : INotifyPropertyChanged
 
     // ---------- Dock（F22 + v0.6 固定/取消）----------
 
+    /// <summary>v1.17：把面板中的条目钉选到 Dock（保留名称/参数/工作目录/管理员设置）。</summary>
+    public bool PinExistingItem(ItemVM item)
+    {
+        const int maxPins = 14;
+        if (DockPins.Any(p => string.Equals(p.Model.Target, item.Model.Target, StringComparison.OrdinalIgnoreCase)))
+            return false; // 已在 Dock
+        if (DockPins.Count >= maxPins)
+        {
+            MessageBox.Show($"Dock 钉选已达上限 {maxPins} 个，请先取消部分钉选。",
+                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+            return false;
+        }
+
+        var clone = new LaunchItem
+        {
+            Name = item.Model.Name,
+            Target = item.Model.Target,
+            Args = item.Model.Args,
+            WorkDir = item.Model.WorkDir,
+            Kind = item.Model.Kind,
+            RunAsAdmin = item.Model.RunAsAdmin,
+            IconCache = item.Model.IconCache,
+        };
+        DockPins.Add(new ItemVM(clone, Icons));
+        SaveConfig();
+        return true;
+    }
+
     /// <summary>钉选到 Dock。返回是否有新增（v1.12：供 UI 判断重复/上限）。</summary>
     public bool PinToDock(IEnumerable<string> paths)
     {

@@ -374,12 +374,36 @@ public partial class PanelWindow : Window
 
         _dragAnchors.Remove(border);
         if (border.Tag is not ItemVM item) return;
-        StartFileDrag(border, item.Model.Target);
+        StartItemDrag(border, item); // v1.17：携带 QuickPanel.Item 供 Dock 钉选
+    }
+
+    /// <summary>
+    /// v1.17：从面板拖出条目。
+    /// 同时携带 QuickPanel.Item（供 Dock 接收 → 钉选）与 FileDrop（供桌面接受 → 生成副本）。
+    /// URL 类无实体文件时只带 QuickPanel.Item，因此仍可拖到 Dock 钉选。
+    /// </summary>
+    private void StartItemDrag(FrameworkElement source, ItemVM item)
+    {
+        _oleDragging = true;
+        try
+        {
+            var data = new DataObject();
+            data.SetData("QuickPanel.Item", item);
+            var target = item.Model.Target;
+            if (File.Exists(target) || Directory.Exists(target))
+                data.SetData(DataFormats.FileDrop, new[] { target });
+
+            DragDrop.DoDragDrop(source, data, DragDropEffects.Copy | DragDropEffects.Move);
+        }
+        finally
+        {
+            _oleDragging = false;
+        }
     }
 
     private void StartFileDrag(FrameworkElement source, string target)
     {
-        // URL 等无实体文件的目标不支持拖出
+        // 兼容旧调用：仅文件/文件夹
         if (!File.Exists(target) && !Directory.Exists(target)) return;
         _oleDragging = true;
         try
