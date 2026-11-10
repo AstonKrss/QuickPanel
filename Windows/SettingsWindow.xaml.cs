@@ -92,6 +92,7 @@ public partial class SettingsWindow : Window
         HoverLiftSlider.Value = Math.Clamp(settings.HoverLift, 0, 20);
         HoverLiftText.Text = $"{HoverLiftSlider.Value:0}";
         HideDesktopIconsCheck.IsChecked = DesktopIcons.IsHidden();
+        ReuseRunningCheck.IsChecked = settings.ReuseRunningWindow;
         DockTextColorBox.Text = settings.DockTextColor;
         DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
         DockAlwaysVisibleCheck.IsChecked = settings.DockAlwaysVisible;
@@ -310,6 +311,9 @@ public partial class SettingsWindow : Window
         _appearanceChanged();
     }
 
+    /// <summary>v1.31：作者仓库入口。</summary>
+    private void GitHub_Click(object sender, MouseButtonEventArgs e) => Links.OpenRepo();
+
     private void Swatch_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string tag }) return;
@@ -361,6 +365,13 @@ public partial class SettingsWindow : Window
     {
         if (_initializing) return;
         _vm.Store.Config.Settings.DockDesktopOnly = DockDesktopOnlyCheck.IsChecked == true;
+    }
+
+    /// <summary>v1.31：已运行软件直接切窗口。</summary>
+    private void ReuseRunning_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        _vm.Store.Config.Settings.ReuseRunningWindow = ReuseRunningCheck.IsChecked == true;
     }
 
     /// <summary>v1.30：桌面留白。只切 Explorer 的显示开关，不动文件。</summary>
@@ -510,6 +521,7 @@ public partial class SettingsWindow : Window
         settings.DockTextColor = "#000000";
         settings.DockDesktopOnly = true;
         settings.WidgetScale = 1.0;
+        settings.ReuseRunningWindow = true;
 
         _initializing = true;
         ModeAcrylicRadio.IsChecked = false;
@@ -520,6 +532,7 @@ public partial class SettingsWindow : Window
         PanelSurfaceColorBox.Text = settings.PanelSurfaceColor;
         PanelOpacitySlider.Value = Math.Clamp(settings.PanelOpacity, 0.05, 1.0);
         PanelOpacityText.Text = $"{PanelOpacitySlider.Value * 100:0}%";
+        ReuseRunningCheck.IsChecked = settings.ReuseRunningWindow;
         IconScaleSlider.Value = 1.0;
         WidgetScaleSlider.Value = 1.0;
         PanelScaleSlider.Value = 1.0;

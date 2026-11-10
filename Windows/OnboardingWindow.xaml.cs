@@ -172,6 +172,9 @@ public partial class OnboardingWindow : Window
         ShowStep(_step + 1);
     }
 
+    /// <summary>v1.31：作者链接（只在用户点击时打开浏览器）。</summary>
+    private void GitHubLink_Click(object sender, RoutedEventArgs e) => Links.OpenRepo();
+
     private void Back_Click(object sender, RoutedEventArgs e) => ShowStep(_step - 1);
 
     private void Skip_Click(object sender, RoutedEventArgs e) => Finish();

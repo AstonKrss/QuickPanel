@@ -9,8 +9,13 @@ namespace QuickPanel.Services;
 /// <summary>启动三类目标 + UAC 提权（PRD F6/F7、§5.2 提权边界）。</summary>
 public class LaunchService
 {
-    public void Launch(LaunchItem item, bool asAdmin = false)
+    /// <summary>reuseRunning=true 时，若目标已在运行则直接切窗口（快得多）。</summary>
+    public void Launch(LaunchItem item, bool asAdmin = false, bool reuseRunning = false)
     {
+        if (reuseRunning && !asAdmin && !item.RunAsAdmin
+            && RunningAppActivator.TryActivate(item.Target))
+            return;
+
         try
         {
             var psi = new ProcessStartInfo

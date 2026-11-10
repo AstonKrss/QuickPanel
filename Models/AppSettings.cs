@@ -86,6 +86,9 @@ public class AppSettings
     /// <summary>v1.30：隐藏桌面图标（桌面留白，快捷方式仍在桌面文件夹里，可用面板/Dock 访问）。</summary>
     public bool DesktopIconsHidden { get; set; }
 
+    /// <summary>v1.31：目标已在运行时直接切窗口（与任务栏一致，省掉一次进程启动）。</summary>
+    public bool ReuseRunningWindow { get; set; } = true;
+
     // v0.5 Dock 自定义
     /// <summary>位置：bottomCenter（默认）/ free（⠿ 手柄拖动）。</summary>
     public string DockPositionMode { get; set; } = "bottomCenter";

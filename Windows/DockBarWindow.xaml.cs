@@ -120,13 +120,6 @@ public partial class DockBarWindow : Window
         var sy = unchecked((short)((long)lParam >> 16));
         var pt = PointFromScreen(new Point(sx, sy));
         var hit = InputHitTest(pt);
-        try
-        {
-            var name = hit is FrameworkElement fe ? fe.GetType().Name + "#" + (fe.Name ?? "") : (hit?.GetType().Name ?? "null");
-            System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "qp-hit.log"),
-                $"{sx},{sy} -> {pt.X:0},{pt.Y:0} hit={name} win={ActualWidth:0}x{ActualHeight:0}{Environment.NewLine}");
-        }
-        catch { }
         if (hit is null || ReferenceEquals(hit, RootBorder))
         {
             handled = true;
@@ -619,14 +612,9 @@ public partial class DockBarWindow : Window
 
     // ---------- F26：⠿ 自由拖动 ----------
 
+    /// <summary>v1.32：只有 ⠿ 手柄能拖动 Dock —— 之前点空白衬垫也会拖，
+    /// 误触一次就会把 Dock 甩到别的显示器（并静默切成自由模式）。</summary>
     private void Grip_Down(object sender, MouseButtonEventArgs e) => StartFreeDrag();
-
-    private void Root_Down(object sender, MouseButtonEventArgs e)
-    {
-        // 仅空白衬垫区域（RootBorder 自身）触发拖动，不影响按钮/图钉
-        if (e.OriginalSource == RootBorder && e.LeftButton == MouseButtonState.Pressed)
-            StartFreeDrag();
-    }
 
     private void StartFreeDrag()
     {

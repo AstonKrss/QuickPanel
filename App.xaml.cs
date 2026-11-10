@@ -374,6 +374,16 @@ public partial class App : Application
 
     private static SD.Icon CreateTrayIcon()
     {
+        // v1.31：优先用打包的多尺寸图标，与 exe/窗口一致；失败再退回纯色绘制
+        try
+        {
+            var uri = new Uri("pack://application:,,,/Assets/QuickPanel.ico");
+            using var stream = GetResourceStream(uri)?.Stream;
+            if (stream is not null)
+                return new SD.Icon(stream, new SD.Size(32, 32));
+        }
+        catch { /* 资源缺失时走回退 */ }
+
         using var bmp = new SD.Bitmap(32, 32);
         using (var g = SD.Graphics.FromImage(bmp))
         {

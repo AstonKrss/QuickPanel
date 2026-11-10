@@ -332,7 +332,9 @@ public partial class PanelWindow : Window
 
     private void LaunchAndClose(ItemVM item)
     {
-        _vm.LaunchItem(item);
+        // v1.31：Shift+点击 = 强制新实例（不走"切到已运行窗口"）
+        var forceNew = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
+        _vm.LaunchItem(item, forceNewInstance: forceNew);
         SearchBox.Clear();
         UpdateSearch();
         HidePanel();

@@ -599,3 +599,37 @@ Dock 和面板共用一套底色会让"为了 Dock 全透明"把面板也拖到�
 | `QuickPanel-v1.30.0-standalone-win-x64/` | 67 MB | 任何 Win10/11 x64，无需运行时 |
 
 两者解压后都是双击「安装.bat」，装到 `%LOCALAPPDATA%\QuickPanel` 并建快捷方式、写卸载项。
+
+## 21. v1.31 交互与分发
+
+### 21.1 启动速度
+
+从面板/Dock 打开"已经在后台"的软件，和任务栏点击的差距不在界面，而在启动方式：
+`Process.Start(.lnk)` 会真的再拉起一个进程，Electron 类应用还要走单实例握手 —— 实测 ZCode 这条路径阻塞 ~6.1 秒。
+任务栏点击只是 `SetForegroundWindow`。
+
+- `Services/RunningAppActivator`：把 .lnk 解析成 exe（结果缓存），按进程名找到已有实例的窗口，
+  `ShowWindow(SW_RESTORE)` + `SetForegroundWindow`，失败再 `SwitchToThisWindow`
+- 实测：点 Dock 上的 ZCode 图钉 → 233ms 切到前台（含首次 .lnk 解析）
+- 设置项「已运行的软件直接切到窗口」默认开启；Shift+点击强制开新实例
+- 统计写盘从启动前挪到启动后，不再占启动延迟
+
+### 21.2 Dock 只留在桌面
+
+Dock 的 `Topmost` 完全由「Dock 置顶显示」决定（默认关）。关掉后它只是普通窗口，
+被最大化程序盖住是预期行为 —— 用户要的是"只在桌面出现"。
+
+### 21.3 拖动只认 ⠿ 手柄
+
+此前点击 Dock 空白衬垫也会进入拖动并静默切成自由模式，误触一次就把 Dock 甩到另一块屏。
+现在只有 ⠿ 手柄能拖；`WM_NCHITTEST` 对空白区域返回 `HTTRANSPARENT`，不挡下层点击。
+
+### 21.4 图标与作者入口
+
+- `Assets/QuickPanel.ico`（多尺寸 16–256）用于 exe、任务栏、所有窗口标题栏、托盘
+- 初始化向导首页/完成页、设置侧栏都有「作者 Aston · GitHub 点个 Star」
+
+### 21.5 搜索覆盖常用
+
+搜索此前只查各分组，钉在 Dock「常用」里的程序搜不到。现在常用 + 分组一起去重合并，
+常用优先、再按使用频率/最近使用排序。

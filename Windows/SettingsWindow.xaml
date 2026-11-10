@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="QuickPanel 设置"
+        Icon="/Assets/QuickPanel.ico"
         Width="640" Height="560"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
         Background="{DynamicResource SbBg}" UseLayoutRounding="True"
@@ -173,6 +174,13 @@
                 </ListBox>
                 <TextBlock x:Name="VersionText" Text="v1.1.0" FontSize="10"
                            VerticalAlignment="Bottom" Margin="10,0,0,0"/>
+                <!-- v1.31：作者与仓库入口 -->
+                <TextBlock Text="作者 Aston" FontSize="10" Margin="10,8,0,0"
+                           Foreground="{DynamicResource SbText}" Opacity="0.6"/>
+                <TextBlock x:Name="GitHubLink" Text="GitHub · 点个 Star ⭐" FontSize="10"
+                           Margin="10,3,0,0" Cursor="Hand"
+                           Foreground="{StaticResource AccentBrush}"
+                           MouseLeftButtonUp="GitHub_Click"/>
             </StackPanel>
         </Border>
 
@@ -214,6 +222,12 @@
                                       Margin="0,8,0,0" Click="HideDesktopIcons_Changed"/>
                             <TextBlock Text="快捷方式不会被删除，仍在桌面文件夹里；从面板、Dock 或资源管理器都能打开。隐藏期间桌面右键不可用，托盘菜单/这里可随时恢复；退出 QuickPanel 会自动恢复。"
                                        Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
+                            <CheckBox x:Name="ReuseRunningCheck"
+                                      Content="已运行的软件直接切到窗口（更快，等同任务栏）"
+                                      Margin="0,16,0,0" Click="ReuseRunning_Changed"/>
+                            <TextBlock Text="ZCode、浏览器这类已在后台的软件，点击即刻切过去；按住 Shift 点击可强制开新实例。"
+                                       Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
+
                             <TextBlock Text="鼠标热区唤出延迟" Margin="0,16,0,0"/>
                             <Grid Margin="0,6,0,0">
                                 <Grid.ColumnDefinitions>
