@@ -332,6 +332,18 @@
                               Click="Widget_Changed"/>
                     <CheckBox x:Name="ShowMonitorCheck" Content="显示系统监控（CPU / 内存 / 网速）"
                               Click="Widget_Changed"/>
+                    <TextBlock Text="组件字体大小（时钟 / 监控，独立于图标缩放）" Margin="0,14,0,0"/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="WidgetScaleSlider" Minimum="0.7" Maximum="1.6"
+                                Value="1.0" TickFrequency="0.05" IsMoveToPointEnabled="True"/>
+                        <TextBlock x:Name="WidgetScaleText" Grid.Column="1"
+                                   Text="100%" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource SbText}"/>
+                    </Grid>
                         </StackPanel>
                     </Border>
                 </Grid>

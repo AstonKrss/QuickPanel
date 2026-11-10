@@ -232,6 +232,11 @@ public partial class DockBarWindow : Window
         var showClock = s.ShowClock;
         var showMonitor = s.ShowSystemMonitor;
 
+        // v1.10：组件字体独立缩放
+        var ws = Math.Clamp(s.WidgetScale, 0.7, 1.6);
+        WidgetScaleTf.ScaleX = ws;
+        WidgetScaleTf.ScaleY = ws;
+
         WidgetPanel.Visibility = (showClock || showMonitor) ? Visibility.Visible : Visibility.Collapsed;
         ClockText.Visibility = showClock ? Visibility.Visible : Visibility.Collapsed;
         DateText.Visibility = showClock ? Visibility.Visible : Visibility.Collapsed;

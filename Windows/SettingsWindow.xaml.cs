@@ -63,6 +63,8 @@ public partial class SettingsWindow : Window
         ShowClockCheck.IsChecked = settings.ShowClock;
         ClockSecondsCheck.IsChecked = settings.ClockShowSeconds;
         ShowMonitorCheck.IsChecked = settings.ShowSystemMonitor;
+        WidgetScaleSlider.Value = Math.Clamp(settings.WidgetScale, 0.7, 1.6);
+        WidgetScaleText.Text = $"{Math.Clamp(settings.WidgetScale, 0.7, 1.6) * 100:0}%";
         DockTextColorBox.Text = settings.DockTextColor;
         DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
         IconScaleSlider.Value = Math.Clamp(settings.IconScale, 0.6, 1.6);
@@ -142,6 +144,16 @@ public partial class SettingsWindow : Window
             var scale = Math.Round(IconScaleSlider.Value, 2);
             IconScaleText.Text = $"{scale * 100:0}%";
             settings.IconScale = Math.Clamp(scale, 0.6, 1.6);
+            _layoutChanged();
+        };
+
+        // v1.10：组件字体缩放
+        WidgetScaleSlider.ValueChanged += (_, _) =>
+        {
+            if (_initializing) return;
+            var scale = Math.Round(WidgetScaleSlider.Value, 2);
+            WidgetScaleText.Text = $"{scale * 100:0}%";
+            settings.WidgetScale = Math.Clamp(scale, 0.7, 1.6);
             _layoutChanged();
         };
 
@@ -312,7 +324,6 @@ public partial class SettingsWindow : Window
         s.ShowSystemMonitor = ShowMonitorCheck.IsChecked == true;
         _layoutChanged();
     }
-
     private void ResetAppearance_Click(object sender, RoutedEventArgs e)
     {
         var settings = _vm.Store.Config.Settings;
@@ -328,6 +339,7 @@ public partial class SettingsWindow : Window
         settings.DockIconPlate = true;
         settings.DockTextColor = "#000000";
         settings.DockDesktopOnly = true;
+        settings.WidgetScale = 1.0;
 
         _initializing = true;
         ModeAcrylicRadio.IsChecked = false;
@@ -336,6 +348,7 @@ public partial class SettingsWindow : Window
         SurfaceColorBox.Text = settings.SurfaceColor;
         AccentColorBox.Text = settings.AccentColor;
         IconScaleSlider.Value = 1.0;
+        WidgetScaleSlider.Value = 1.0;
         PanelScaleSlider.Value = 1.0;
         PosCenterRadio.IsChecked = true;
         PosFreeRadio.IsChecked = false;

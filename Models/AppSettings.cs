@@ -39,6 +39,9 @@ public class AppSettings
     /// <summary>是否在时钟上显示秒。</summary>
     public bool ClockShowSeconds { get; set; }
 
+    /// <summary>v1.10：组件（时钟/监控）字体缩放 0.7–1.6，独立于 Dock 图标缩放。</summary>
+    public double WidgetScale { get; set; } = 1.0;
+
     /// <summary>v0.8：设置窗口主题 dark / light。</summary>
     public string SettingsTheme { get; set; } = "dark";
 

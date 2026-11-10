@@ -139,9 +139,12 @@
                            Foreground="{DynamicResource TextSecondaryBrush}"/>
             </Border>
 
-            <!-- v1.9：时钟 + 系统监控（可开关） -->
+            <!-- v1.9：时钟 + 系统监控（可开关）；v1.10：独立字体缩放 -->
             <StackPanel x:Name="WidgetPanel" Orientation="Horizontal" VerticalAlignment="Center"
                         Margin="6,0,0,0" Visibility="Collapsed">
+                <StackPanel.LayoutTransform>
+                    <ScaleTransform x:Name="WidgetScaleTf" ScaleX="1" ScaleY="1"/>
+                </StackPanel.LayoutTransform>
                 <Border Width="1" Margin="4,0" Background="{DynamicResource HairlineBrush}"/>
                 <StackPanel VerticalAlignment="Center" Margin="8,0,4,0">
                     <TextBlock x:Name="ClockText" Text="00:00" FontSize="14"
