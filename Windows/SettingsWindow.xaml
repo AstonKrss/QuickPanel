@@ -537,6 +537,7 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="22"/>
                                                 <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <Image Source="{Binding Icon}" Width="18" Height="18"
                                                    VerticalAlignment="Center"
@@ -544,6 +545,10 @@
                                             <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12"
                                                        VerticalAlignment="Center" Margin="4,0,0,0"
                                                        TextTrimming="CharacterEllipsis"/>
+                                            <!-- v1.15：目标不存在时红字提示 -->
+                                            <TextBlock Grid.Column="2" Text="{Binding MissingHint}" FontSize="10"
+                                                       VerticalAlignment="Center" Margin="6,0,0,0"
+                                                       Foreground="#FFCC4444"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>

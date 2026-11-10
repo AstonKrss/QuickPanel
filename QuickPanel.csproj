@@ -14,7 +14,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 混用 WPF+WinForms：DPI 由项目属性统一声明（WFAC010），PerMonitorV2 进程级生效 -->
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <Version>1.14.0</Version>
+    <Version>1.15.0</Version>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 

@@ -29,6 +29,24 @@ public class ItemVM : INotifyPropertyChanged
 
     public ImageSource? Icon { get; }
 
+    /// <summary>v1.15：目标文件/文件夹不存在（URL 类恒为 false）。界面据此置灰提示。</summary>
+    public bool IsMissing
+    {
+        get
+        {
+            try
+            {
+                if (Model.Kind == ItemKind.Url) return false;
+                if (string.IsNullOrWhiteSpace(Model.Target)) return true;
+                return !File.Exists(Model.Target) && !Directory.Exists(Model.Target);
+            }
+            catch { return false; }
+        }
+    }
+
+    /// <summary>v1.15：供绑定使用的置灰提示文案。</summary>
+    public string MissingHint => IsMissing ? "（目标不存在）" : "";
+
     /// <summary>所属分组（搜索结果副标题与移动分组用；Dock 钉选副本为 null）。</summary>
     public GroupVM? OwnerGroup { get; set; }
 

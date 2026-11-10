@@ -335,6 +335,17 @@ public partial class DockBarWindow : Window
                 var iconSize = Math.Round(pinSize * 0.73);
                 img.Width = iconSize;
                 img.Height = iconSize;
+
+                // v1.15：隐形模式下给图标加柔和阴影，复杂背景上可辨认轮廓
+                img.Effect = _bare
+                    ? new DropShadowEffect
+                    {
+                        Color = Colors.Black,
+                        BlurRadius = 8,
+                        ShadowDepth = 0,
+                        Opacity = 0.55,
+                    }
+                    : null;
             }
 
             if (container is UIElement ui)
@@ -354,17 +365,24 @@ public partial class DockBarWindow : Window
             ? new SolidColorBrush(custom)
             : (Brush)FindResource("TextPrimaryBrush");
 
+        // v1.15：隐形模式下给文字加柔和外发光，保证复杂背景（代码/图片）上可读
+        var textGlow = bare ? MakeReadabilityGlow() : null;
+
         GripText.Foreground = textBrush;
-        GripText.Effect = null;
+        GripText.Effect = textGlow;
         GripText.FontWeight = bare ? FontWeights.Bold : FontWeights.Normal;
         GearText.Foreground = textBrush;
-        GearText.Effect = null;
+        GearText.Effect = textGlow;
 
         // v1.11：时钟/日期/监控文字同样跟随自定义颜色（此前漏掉，一直是主题默认色）
         ClockText.Foreground = textBrush;
         DateText.Foreground = bare ? textBrush : (Brush)FindResource("TextSecondaryBrush");
         MonitorLine1.Foreground = bare ? textBrush : (Brush)FindResource("TextSecondaryBrush");
         MonitorLine2.Foreground = bare ? textBrush : (Brush)FindResource("TextSecondaryBrush");
+        ClockText.Effect = textGlow;
+        DateText.Effect = textGlow;
+        MonitorLine1.Effect = textGlow;
+        MonitorLine2.Effect = textGlow;
         if (bare)
         {
             ClockText.FontWeight = FontWeights.Bold;
@@ -393,6 +411,20 @@ public partial class DockBarWindow : Window
                 plateBorder.Style = null;
             }
         }
+    }
+
+    /// <summary>v1.15：文字可读性外发光 —— 深色字配白色光晕，浅色字配深色光晕。</summary>
+    private DropShadowEffect MakeReadabilityGlow()
+    {
+        var c = Theme.ParseColor(_vm.Store.Config.Settings.DockTextColor, Colors.Black);
+        var lum = 0.299 * c.R + 0.587 * c.G + 0.114 * c.B;
+        return new DropShadowEffect
+        {
+            Color = lum < 128 ? Colors.White : Colors.Black,
+            BlurRadius = 6,
+            ShadowDepth = 0,
+            Opacity = 0.85,
+        };
     }
 
     private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject

@@ -97,7 +97,8 @@
                 </Border>
 
                 <!-- F2：图标网格 -->
-                <ScrollViewer x:Name="ItemsHost" Grid.Column="1" Margin="6,6,10,10"
+                <Grid Grid.Column="1">
+                    <ScrollViewer x:Name="ItemsHost" Margin="6,6,10,10"
                               VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding SelectedGroup.Items}">
                         <ItemsControl.ItemsPanel>
@@ -130,18 +131,59 @@
                                     <StackPanel VerticalAlignment="Center" Margin="4,8">
                                         <Image Source="{Binding Icon}" Width="44" Height="44"
                                                HorizontalAlignment="Center"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                               RenderOptions.BitmapScalingMode="HighQuality">
+                                            <!-- v1.15：目标不存在时图标半透明，提示失效 -->
+                                            <Image.Style>
+                                                <Style TargetType="Image">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                                            <Setter Property="Opacity" Value="0.35"/>
+                                                            <Setter Property="ToolTip" Value="目标不存在，点击会提示错误"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
                                         <TextBlock Text="{Binding Name}" FontSize="11"
                                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                                    TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                                    MaxHeight="26" TextAlignment="Center"
-                                                   HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                   HorizontalAlignment="Center" Margin="0,4,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                                            <Setter Property="Opacity" Value="0.5"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </ScrollViewer>
+                    </ScrollViewer>
+
+                    <!-- v1.15：空分组提示 -->
+                    <TextBlock Text="这个分组还没有条目&#10;把文件拖到这里，或右键选择「添加条目…」"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               TextAlignment="Center" FontSize="12" LineHeight="20"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               IsHitTestVisible="False">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedGroup.Items.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
 
                 <!-- F60：搜索结果（跨分组） -->
                 <ScrollViewer x:Name="SearchHost" Grid.Column="1" Margin="6,6,10,10"
