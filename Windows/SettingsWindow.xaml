@@ -448,9 +448,20 @@
 
                 <!-- ── 分组 ── -->
                 <Grid x:Name="SecGroups" Visibility="Collapsed">
-                    <Border Style="{StaticResource Card}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左：分组列表 -->
+                    <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,0">
                         <StackPanel>
-                            <ListBox x:Name="GroupEditList" Height="150"
+                            <TextBlock Text="分组" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <ListBox x:Name="GroupEditList" Height="270"
                                      Background="{DynamicResource SbField}" BorderBrush="{DynamicResource SbFieldBorder}" BorderThickness="1"
                                      Foreground="{DynamicResource SbText}"
                                      DisplayMemberPath="Name"
@@ -486,20 +497,87 @@
                                     </Style>
                                 </ListBox.ItemContainerStyle>
                             </ListBox>
-                            <Grid Margin="0,10,0,0">
+                            <Grid Margin="0,8,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="GroupRenameBox" Height="32" VerticalContentAlignment="Center"/>
-                                <Button Grid.Column="1" Content="重命名" Click="Group_Rename_Click" Margin="8,0,0,0"/>
+                                <TextBox x:Name="GroupRenameBox" Height="30" VerticalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="改名" Click="Group_Rename_Click" Margin="6,0,0,0"/>
                             </Grid>
-                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                                <Button Content="新建分组" Click="Group_Add_Click"/>
-                                <Button Content="删除分组" Click="Group_Delete_Click" Margin="8,0,0,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="新建" Click="Group_Add_Click" Padding="12,4"/>
+                                <Button Content="删除" Click="Group_Delete_Click" Margin="6,0,0,0" Padding="12,4"/>
                             </StackPanel>
-                            <TextBlock Text="提示：也可以在 Dock 上右键 →「新建分组…」" Margin="0,14,0,0"/>
                         </StackPanel>
+                    </Border>
+
+                    <!-- 右：该分组的条目列表 -->
+                    <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock x:Name="GroupItemsHeader" Text="条目" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <ListBox x:Name="GroupItemsList" Grid.Row="1" Height="270"
+                                     Background="{DynamicResource SbField}" BorderBrush="{DynamicResource SbFieldBorder}" BorderThickness="1"
+                                     Foreground="{DynamicResource SbText}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     MouseDoubleClick="GroupItems_DoubleClick"
+                                     PreviewMouseLeftButtonDown="GroupItems_Down"
+                                     PreviewMouseMove="GroupItems_Move"
+                                     AllowDrop="True"
+                                     DragOver="GroupItems_DragOver"
+                                     Drop="GroupItems_Drop">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="22"/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <Image Source="{Binding Icon}" Width="18" Height="18"
+                                                   VerticalAlignment="Center"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12"
+                                                       VerticalAlignment="Center" Margin="4,0,0,0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="6,4"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bd" CornerRadius="6" Background="Transparent"
+                                                            Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SbBtnHover}"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectedBrush}"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="移除条目" Click="GroupItems_Remove_Click" Padding="12,4"/>
+                                <Button Content="移动到分组" Click="GroupItems_MoveTo_Click" Margin="6,0,0,0" Padding="12,4"/>
+                                <Button Content="添加条目" Click="GroupItems_Add_Click" Margin="6,0,0,0" Padding="12,4"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
                 </Grid>
 

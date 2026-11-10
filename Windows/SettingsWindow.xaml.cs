@@ -2,9 +2,11 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using QuickPanel.Models;
 using QuickPanel.Services;
 using QuickPanel.ViewModels;
 
@@ -94,7 +96,6 @@ public partial class SettingsWindow : Window
 
         GroupEditList.ItemsSource = vm.Groups;
         if (vm.Groups.Count > 0) GroupEditList.SelectedIndex = 0;
-
         // ESC 关闭；标题栏跟随主题 + Win11 圆角
         PreviewKeyDown += (_, args) =>
         {
@@ -225,7 +226,17 @@ public partial class SettingsWindow : Window
         GroupEditList.SelectionChanged += (_, _) =>
         {
             if (GroupEditList.SelectedItem is GroupVM group)
+            {
                 GroupRenameBox.Text = group.Name;
+                // v1.14：同步右侧条目列表
+                GroupItemsList.ItemsSource = group.Items;
+                GroupItemsHeader.Text = $"{group.Name} 的条目（{group.Items.Count}）";
+            }
+            else
+            {
+                GroupItemsList.ItemsSource = null;
+                GroupItemsHeader.Text = "条目";
+            }
         };
     }
 
@@ -466,6 +477,156 @@ public partial class SettingsWindow : Window
     {
         GroupDragHelper.OnDrop(GroupEditList, e, (g, idx) => _vm.MoveGroup(g, idx));
         e.Handled = true;
+    }
+
+    // ---------- v1.14：分组内条目管理 ----------
+
+    private GroupVM? CurrentGroup => GroupEditList.SelectedItem as GroupVM;
+
+    private void RefreshItemsHeader()
+    {
+        var g = CurrentGroup;
+        GroupItemsHeader.Text = g is null ? "条目" : $"{g.Name} 的条目（{g.Items.Count}）";
+    }
+
+    /// <summary>双击条目 → 启动。</summary>
+    private void GroupItems_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (GroupItemsList.SelectedItem is ItemVM item)
+            _vm.LaunchItem(item);
+    }
+
+    /// <summary>从当前分组移除选中条目。</summary>
+    private void GroupItems_Remove_Click(object sender, RoutedEventArgs e)
+    {
+        var g = CurrentGroup;
+        if (g is null || GroupItemsList.SelectedItem is not ItemVM item) return;
+        g.RemoveItem(item);
+        _vm.SaveConfig();
+        RefreshItemsHeader();
+    }
+
+    /// <summary>把选中条目移动到其它分组。</summary>
+    private void GroupItems_MoveTo_Click(object sender, RoutedEventArgs e)
+    {
+        var g = CurrentGroup;
+        if (g is null || GroupItemsList.SelectedItem is not ItemVM item) return;
+
+        var targets = _vm.Groups.Where(x => !ReferenceEquals(x, g)).ToList();
+        if (targets.Count == 0)
+        {
+            MessageBox.Show("没有其它分组可移动。", "QuickPanel",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var menu = new ContextMenu { PlacementTarget = GroupItemsList, Placement = PlacementMode.Bottom };
+        foreach (var t in targets)
+        {
+            var target = t;
+            var mi = new MenuItem { Header = $"{target.Name}（{target.Items.Count} 项）" };
+            mi.Click += (_, _) =>
+            {
+                _vm.MoveItem(item, target);
+                RefreshItemsHeader();
+            };
+            menu.Items.Add(mi);
+        }
+        menu.IsOpen = true;
+    }
+
+    /// <summary>向当前分组添加条目（文件/文件夹/网址）。</summary>
+    private void GroupItems_Add_Click(object sender, RoutedEventArgs e)
+    {
+        var g = CurrentGroup;
+        if (g is null) return;
+        var light = string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
+        var r = AddItemDialog.Show(this, light);
+        if (r is not { } item) return;
+
+        if (g.Items.Any(i => string.Equals(i.Model.Target, item.Target, StringComparison.OrdinalIgnoreCase)))
+        {
+            MessageBox.Show("该目标已在当前分组中。", "QuickPanel",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var model = new LaunchItem
+        {
+            Name = string.IsNullOrWhiteSpace(item.Name) ? item.Target : item.Name.Trim(),
+            Target = item.Target.Trim(),
+            Kind = item.Kind,
+            WorkDir = System.IO.File.Exists(item.Target)
+                ? (System.IO.Path.GetDirectoryName(item.Target) ?? "") : "",
+        };
+        g.AddItem(new ItemVM(model, _vm.Icons));
+        _vm.SaveConfig();
+        RefreshItemsHeader();
+    }
+
+    // 条目拖拽排序（v1.14：独立数据格式，与分组拖拽区分）
+    private Point _itemDragStart;
+    private ItemVM? _itemDragged;
+
+    private void GroupItems_Down(object sender, MouseButtonEventArgs e)
+    {
+        var container = FindAncestorListItem(e.OriginalSource as DependencyObject);
+        _itemDragged = container?.DataContext as ItemVM;
+        if (_itemDragged != null) _itemDragStart = e.GetPosition(GroupItemsList);
+    }
+
+    private void GroupItems_Move(object sender, MouseEventArgs e)
+    {
+        if (_itemDragged is null || e.LeftButton != MouseButtonState.Pressed) return;
+        var pos = e.GetPosition(GroupItemsList);
+        if (Math.Abs(pos.X - _itemDragStart.X) + Math.Abs(pos.Y - _itemDragStart.Y)
+            < SystemParameters.MinimumVerticalDragDistance) return;
+
+        var dragged = _itemDragged;
+        _itemDragged = null;
+        try
+        {
+            var data = new DataObject("QuickPanel.Item", dragged);
+            DragDrop.DoDragDrop(GroupItemsList, data, DragDropEffects.Move);
+        }
+        catch { /* 拖拽取消 */ }
+    }
+
+    private void GroupItems_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent("QuickPanel.Item")
+            ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void GroupItems_Drop(object sender, DragEventArgs e)
+    {
+        var g = CurrentGroup;
+        if (g is null) return;
+        if (e.Data.GetData("QuickPanel.Item") is not ItemVM dragged) return;
+
+        var target = FindAncestorListItem(e.OriginalSource as DependencyObject);
+        if (target?.DataContext is not ItemVM targetItem) return;
+
+        var from = g.Items.IndexOf(dragged);
+        var to = g.Items.IndexOf(targetItem);
+        if (from < 0 || to < 0 || from == to) return;
+
+        var pos = e.GetPosition(target);
+        if (pos.Y > target.ActualHeight / 2 && to < g.Items.Count - 1) to++;
+
+        _vm.MoveItemWithinGroup(g, dragged, to);
+        e.Handled = true;
+    }
+
+    private static ListBoxItem? FindAncestorListItem(DependencyObject? obj)
+    {
+        while (obj != null)
+        {
+            if (obj is ListBoxItem hit) return hit;
+            obj = System.Windows.Media.VisualTreeHelper.GetParent(obj);
+        }
+        return null;
     }
 
     private void Group_Add_Click(object sender, RoutedEventArgs e)

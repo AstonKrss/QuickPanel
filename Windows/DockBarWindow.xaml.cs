@@ -562,7 +562,6 @@ public partial class DockBarWindow : Window
 
     /// <summary>v1.12：拖拽起点（屏幕坐标），用于判断是内部排序还是拖出到桌面。</summary>
     private Point _dragStartScreen;
-    private bool _reordering;
 
     private void Pin_MouseMove(object sender, MouseEventArgs e)
     {
@@ -570,7 +569,6 @@ public partial class DockBarWindow : Window
         if (e.LeftButton != MouseButtonState.Pressed)
         {
             _pinDragAnchors.Remove(border);
-            _reordering = false;
             return;
         }
 
@@ -581,7 +579,6 @@ public partial class DockBarWindow : Window
         if (border.Tag is not ItemVM item) return;
 
         // v1.12：先进入内部排序模式；拖出 Dock 垂直范围才转为拖到桌面
-        _reordering = true;
         var screen = PointToScreen(e.GetPosition(this));
         var dockRect = GetScreenRect();
         var outsideVertically = screen.Y < dockRect.Top - 24 || screen.Y > dockRect.Bottom + 24;
@@ -590,7 +587,6 @@ public partial class DockBarWindow : Window
         {
             // 拖出 Dock → 走 OLE 拖到桌面
             _pinDragAnchors.Remove(border);
-            _reordering = false;
             StartFileDrag(border, item.Model.Target);
             return;
         }

@@ -341,6 +341,21 @@ public class MainViewModel : INotifyPropertyChanged
         SaveConfig();
     }
 
+    /// <summary>v1.14：分组内条目排序。</summary>
+    public void MoveItemWithinGroup(GroupVM group, ItemVM item, int targetIndex)
+    {
+        var from = group.Items.IndexOf(item);
+        if (from < 0) return;
+        var to = Math.Clamp(targetIndex, 0, group.Items.Count - 1);
+        if (from == to) return;
+
+        group.Items.Move(from, to);
+        // 同步 Model.Items 顺序
+        group.Model.Items.Remove(item.Model);
+        group.Model.Items.Insert(to, item.Model);
+        SaveConfig();
+    }
+
     /// <summary>
     /// F60 v0.6：跨分组搜索。
     /// v1.9：支持拼音首字母（wx→微信）+ 按使用频率/最近使用排序。
