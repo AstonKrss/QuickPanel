@@ -114,6 +114,7 @@
                     <Ellipse x:Name="Dot2" Width="8" Height="8" Fill="#33000000" Margin="4,0"/>
                     <Ellipse x:Name="Dot3" Width="8" Height="8" Fill="#33000000" Margin="4,0"/>
                     <Ellipse x:Name="Dot4" Width="8" Height="8" Fill="#33000000" Margin="4,0"/>
+                    <Ellipse x:Name="Dot5" Width="8" Height="8" Fill="#33000000" Margin="4,0"/>
                 </StackPanel>
             </Grid>
 

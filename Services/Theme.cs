@@ -53,5 +53,19 @@ namespace QuickPanel.Services;
         res["SurfaceOverlayBrush"] = new SolidColorBrush(surface);
         res["AccentBrush"] = new SolidColorBrush(accent);
         res["SelectedBrush"] = new SolidColorBrush(Color.FromArgb(0x3D, accent.R, accent.G, accent.B));
+
+        // v1.28：底板很淡（半透明/完全透明）时，面板文字跟随用户设置的 Dock 文字色。
+        // 浅色壁纸 + 浅色文字 = 分组名看不见；用户选的颜色本来就是给"浮在背景上"准备的。
+        var textColor = ParseColor(config.Settings.DockTextColor, Color.FromRgb(0xDC, 0xDD, 0xE2));
+        if (NearInvisible || surface.A < 0x60)
+        {
+            res["TextPrimaryBrush"] = new SolidColorBrush(textColor);
+            res["TextSecondaryBrush"] = new SolidColorBrush(
+                Color.FromArgb(0xB4, textColor.R, textColor.G, textColor.B));
+            res["CardSubtleBrush"] = new SolidColorBrush(
+                Color.FromArgb(0x16, textColor.R, textColor.G, textColor.B));
+            res["HairlineBrush"] = new SolidColorBrush(
+                Color.FromArgb(0x2E, textColor.R, textColor.G, textColor.B));
+        }
     }
 }

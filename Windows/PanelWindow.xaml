@@ -10,6 +10,33 @@
         <WindowChrome GlassFrameThickness="-1" CaptionHeight="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
 
+    <Window.Resources>
+        <!-- v1.28：去掉 TextBox 默认边框/焦点蓝框（在透明面板上很突兀），改用圆角细边 + 强调色聚焦 -->
+        <Style x:Key="FlatSearchBox" TargetType="TextBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd" CornerRadius="9"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="10,0"
+                                          VerticalAlignment="Center" Focusable="False"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Border x:Name="RootBorder" CornerRadius="12"
             Background="{DynamicResource SurfaceOverlayBrush}"
             BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
@@ -38,7 +65,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="SearchBox" Grid.Column="0" Height="34" VerticalContentAlignment="Center"
-                         FontSize="13"
+                         FontSize="13" Style="{StaticResource FlatSearchBox}"
                          Background="#26FFFFFF" Foreground="{DynamicResource TextPrimaryBrush}"
                          BorderBrush="{DynamicResource HairlineBrush}"
                          CaretBrush="{DynamicResource TextPrimaryBrush}"

@@ -112,11 +112,11 @@ public partial class OnboardingWindow : Window
             _ => ("全部就绪", "开始使用你的启动面板"),
         };
 
-        var dots = new[] { Dot1, Dot2, Dot3, Dot4 };
+        var dots = new[] { Dot1, Dot2, Dot3, Dot4, Dot5 };
         for (var i = 0; i < dots.Length; i++)
             dots[i].Fill = new SolidColorBrush(i <= _step
                 ? Color.FromRgb(0x7C, 0x6F, 0xFF)
-                : Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
+                : Color.FromArgb(0x33, 0x00, 0x00, 0x00));
 
         BackBtn.Visibility = _step is > 0 and < 4 ? Visibility.Visible : Visibility.Collapsed;
         SkipBtn.Visibility = _step is > 0 and < 4 ? Visibility.Visible : Visibility.Collapsed;
@@ -585,7 +585,7 @@ public partial class OnboardingWindow : Window
 
     private void BuildTextColorPalette()
     {
-        foreach (var hex in new[] { "#000000", "#FFFFFF", "#1A1A1A", "#7C6FFF", "#FFD54F" })
+        foreach (var hex in new[] { "#000000", "#FFFFFF", "#7C6FFF", "#4FC3F7", "#FFD54F" })
         {
             var color = (Color)ColorConverter.ConvertFromString(hex);
             var swatch = MakeSwatch(hex, color, 26);
@@ -608,8 +608,8 @@ public partial class OnboardingWindow : Window
             Margin = new Thickness(0, 0, 10, 0),
             Cursor = Cursors.Hand,
             Background = new SolidColorBrush(color),
-            BorderThickness = new Thickness(2),
-            BorderBrush = Brushes.Transparent,
+            BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x2E, 0x00, 0x00, 0x00)),
             ToolTip = hex,
             Template = CreateSwatchTemplate(),
         };
@@ -617,28 +617,44 @@ public partial class OnboardingWindow : Window
 
     private static ControlTemplate CreateSwatchTemplate()
     {
-        var border = new FrameworkElementFactory(typeof(Border));
-        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
-        border.SetValue(Border.BackgroundProperty,
-            new TemplateBindingExtension(BackgroundProperty));
-        border.SetValue(Border.BorderThicknessProperty,
-            new TemplateBindingExtension(BorderThicknessProperty));
-        border.SetValue(Border.BorderBrushProperty,
-            new TemplateBindingExtension(BorderBrushProperty));
+            #pragma warning disable CS0618 // 用 FrameworkElementFactory 构建模板（零依赖）
+            var inner = new FrameworkElementFactory(typeof(Border));
+            inner.SetValue(Border.CornerRadiusProperty, new CornerRadius(6));
+            inner.SetValue(Border.BackgroundProperty,
+                new TemplateBindingExtension(BackgroundProperty));
 
-        var template = new ControlTemplate(typeof(Button)) { VisualTree = border };
-        return template;
+            var outer = new FrameworkElementFactory(typeof(Border));
+            outer.SetValue(Border.CornerRadiusProperty, new CornerRadius(9));
+            outer.SetValue(Border.PaddingProperty, new Thickness(2));
+            outer.SetValue(Border.BorderThicknessProperty,
+                new TemplateBindingExtension(BorderThicknessProperty));
+            outer.SetValue(Border.BorderBrushProperty,
+                new TemplateBindingExtension(BorderBrushProperty));
+            outer.AppendChild(inner);
+            #pragma warning restore CS0618
+
+            var template = new ControlTemplate(typeof(Button)) { VisualTree = outer };
+            return template;
     }
 
     private void SelectAccent(string hex)
     {
-        foreach (var child in AccentPalette.Children.OfType<Button>())
-        {
-            var match = string.Equals(child.Tag as string, hex, StringComparison.OrdinalIgnoreCase);
-            child.BorderBrush = match ? Brushes.White : Brushes.Transparent;
-        }
+        ApplySwatchSelection(AccentPalette, hex);
         _vm.Store.Config.Settings.AccentColor = hex;
         _applyAppearanceSafe();
+    }
+
+    /// <summary>v1.28：选择环 —— 浅色卡片上白色描边看不见，改用强调紫 + 与色块留 2px 间隙。</summary>
+    private static void ApplySwatchSelection(StackPanel panel, string? hex)
+    {
+        var selected = new SolidColorBrush(Color.FromRgb(0x7C, 0x6F, 0xFF));
+        var normal = new SolidColorBrush(Color.FromArgb(0x2E, 0x00, 0x00, 0x00));
+        foreach (var b in panel.Children.OfType<Button>())
+        {
+            var match = hex != null && string.Equals(b.Tag as string, hex, StringComparison.OrdinalIgnoreCase);
+            b.BorderThickness = new Thickness(match ? 2 : 1);
+            b.BorderBrush = match ? selected : normal;
+        }
     }
 
     private void InitAppearanceSelection()
@@ -651,6 +667,7 @@ public partial class OnboardingWindow : Window
         TransparentRadio.IsChecked = AcrylicRadio.IsChecked != true && InvisibleRadio.IsChecked != true;
         SelectAccent(_vm.Store.Config.Settings.AccentColor);
         TextColorBox.Text = _vm.Store.Config.Settings.DockTextColor;
+        ApplySwatchSelection(TextColorPalette, _vm.Store.Config.Settings.DockTextColor);
 
         _appearanceReady = true;
     }
@@ -673,6 +690,7 @@ public partial class OnboardingWindow : Window
         try { _ = (Color)ColorConverter.ConvertFromString(hex); }
         catch { return; }
         _vm.Store.Config.Settings.DockTextColor = hex;
+        ApplySwatchSelection(TextColorPalette, hex);
         _applyAppearanceSafe();
     }
 
