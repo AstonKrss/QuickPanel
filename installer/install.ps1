@@ -66,7 +66,10 @@ $uninstallScript = Join-Path $InstallDir 'uninstall.ps1'
 Copy-Item (Join-Path $PSScriptRoot 'uninstall.ps1') $uninstallScript -Force -ErrorAction SilentlyContinue
 
 Set-ItemProperty -Path $uninstallKey -Name 'DisplayName' -Value 'QuickPanel'
-Set-ItemProperty -Path $uninstallKey -Name 'DisplayVersion' -Value '1.16.0'
+# v1.29：版本号取自 exe，不再写死（此前固定 1.16.0）
+$displayVersion = (Get-Item $exePath).VersionInfo.FileVersion
+if ([string]::IsNullOrWhiteSpace($displayVersion)) { $displayVersion = '1.0.0' }
+Set-ItemProperty -Path $uninstallKey -Name 'DisplayVersion' -Value $displayVersion
 Set-ItemProperty -Path $uninstallKey -Name 'Publisher' -Value 'AstonKrss'
 Set-ItemProperty -Path $uninstallKey -Name 'InstallLocation' -Value $InstallDir
 Set-ItemProperty -Path $uninstallKey -Name 'DisplayIcon' -Value $exePath
