@@ -33,7 +33,11 @@
 
             <!-- F60 v0.6：搜索框 -->
             <Grid Grid.Row="0" Margin="12,10,12,2">
-                <TextBox x:Name="SearchBox" Height="34" VerticalContentAlignment="Center"
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="SearchBox" Grid.Column="0" Height="34" VerticalContentAlignment="Center"
                          FontSize="13"
                          Background="#26FFFFFF" Foreground="{DynamicResource TextPrimaryBrush}"
                          BorderBrush="{DynamicResource HairlineBrush}"
@@ -42,6 +46,24 @@
                 <TextBlock x:Name="SearchHint" Text="搜索全部分组（Enter 启动第一个结果，Esc 清空）"
                            Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
                            Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                <!-- v1.21：常驻模式下的关闭按钮 -->
+                <Border x:Name="ClosePanelButton" Grid.Column="1" Width="34" Height="34"
+                        Margin="8,0,0,0" CornerRadius="8" Background="Transparent"
+                        Cursor="Hand" ToolTip="关闭面板（也可以按 Esc 或 Alt+Q）"
+                        MouseLeftButtonUp="ClosePanel_Click" Visibility="Collapsed">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#33FF5555"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="✕" FontSize="15" HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </Border>
             </Grid>
 
             <Grid Grid.Row="1">

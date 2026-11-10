@@ -191,6 +191,13 @@ public class HotZoneService
 
             if (outside)
             {
+                // v1.20：常驻模式 —— 不做任何自动收回
+                if (StayOpen())
+                {
+                    ResetOutside();
+                    return;
+                }
+
                 if (_outsideSince == DateTime.MinValue) _outsideSince = DateTime.Now;
                 var delay = HideDelayMs();
                 if (delay <= 0 || (DateTime.Now - _outsideSince).TotalMilliseconds >= delay)
@@ -231,8 +238,10 @@ public class HotZoneService
         };
     }
 
-    /// <summary>
-    /// v1.20：Dock 与面板之间的过渡带。
+    /// <summary>v1.20：面板常驻 —— 为 true 时不做任何自动收回。</summary>
+    public Func<bool> StayOpen { get; set; } = () => false;
+
+    /// <summary>v1.20：Dock 与面板之间的过渡带。</summary>
     /// 光标处于两者之间的垂直间隙、且水平落在合并范围内 → 视为"正在移动中"，不收回。
     /// </summary>
     private static bool IsInBridgeZone(Win32.POINT p, Win32.RECT dockRect, Win32.RECT panelRect)

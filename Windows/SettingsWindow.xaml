@@ -442,6 +442,12 @@
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
                                            Foreground="{DynamicResource SbText}"/>
                             </Grid>
+
+                            <!-- v1.21：常驻模式 -->
+                            <CheckBox x:Name="StayOpenCheck" Content="面板常驻（不自动收回，只在 Alt+Q / Esc 时关闭）"
+                                      Margin="0,18,0,0" Click="StayOpen_Changed"/>
+                            <TextBlock Text="开启后：鼠标移开不会收、点击其他窗口不会收，面板一直留在屏幕上。"
+                                       Margin="0,6,0,0" TextWrapping="Wrap" FontSize="11"/>
                         </StackPanel>
                     </Border>
                 </Grid>

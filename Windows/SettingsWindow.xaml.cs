@@ -50,6 +50,7 @@ public partial class SettingsWindow : Window
         HotZoneText.Text = $"{Math.Clamp(settings.HotZoneMs, 100, 1000)} ms";
         HideDelaySlider.Value = Math.Clamp(settings.PanelHideMs, 0, 2000);
         HideDelayText.Text = HideDelaySlider.Value <= 0 ? "立即" : $"{(int)HideDelaySlider.Value} ms";
+        StayOpenCheck.IsChecked = settings.PanelStayOpen;
         ThemeDarkRadio.IsChecked = !string.Equals(settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
         ThemeLightRadio.IsChecked = string.Equals(settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
         ModeAcrylicRadio.IsChecked = string.Equals(settings.BackgroundMode, "acrylic", StringComparison.OrdinalIgnoreCase);
@@ -219,9 +220,24 @@ public partial class SettingsWindow : Window
             settings.PanelHideMs = Math.Clamp(ms, 0, 2000);
         };
 
+        // v1.21：常驻模式
+        StayOpenCheck.Click += (_, _) =>
+        {
+            if (_initializing) return;
+            var on = StayOpenCheck.IsChecked == true;
+            settings.PanelStayOpen = on;
+            // 常驻时延迟滑杆无意义，置灰
+            HideDelaySlider.IsEnabled = !on;
+            HideDelayText.Opacity = on ? 0.4 : 1.0;
+        };
+
         SurfaceColorBox.TextChanged += (_, _) => ApplyColor(SurfaceColorBox, isAccent: false);
         AccentColorBox.TextChanged += (_, _) => ApplyColor(AccentColorBox, isAccent: true);
         DockTextColorBox.TextChanged += (_, _) => ApplyDockTextColor();
+
+        // 初始化时同步滑杆可用性
+        HideDelaySlider.IsEnabled = !settings.PanelStayOpen;
+        HideDelayText.Opacity = settings.PanelStayOpen ? 0.4 : 1.0;
 
         GroupEditList.SelectionChanged += (_, _) =>
         {
@@ -376,6 +392,13 @@ public partial class SettingsWindow : Window
         if (_initializing) return;
         _vm.Store.Config.Settings.DockIconPlate = PlateRadio.IsChecked == true;
         _layoutChanged();
+    }
+
+    /// <summary>v1.21：面板常驻开关。</summary>
+    private void StayOpen_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        _vm.Store.Config.Settings.PanelStayOpen = StayOpenCheck.IsChecked == true;
     }
 
     /// <summary>v1.9：时钟/监控组件开关。</summary>

@@ -43,6 +43,8 @@ public partial class PanelWindow : Window
         {
             // v1.7：打开子对话框/右键菜单/消息框时不收回（否则重命名时面板会消失）
             if (_suppressHide > 0) return;
+            // v1.21：常驻模式 —— 点击其他窗口也不隐藏
+            if (_vm.Store.Config.Settings.PanelStayOpen) return;
             try
             {
                 if (_dock is { IsVisible: true })
@@ -116,6 +118,7 @@ public partial class PanelWindow : Window
     /// <summary>F32：隐藏=窗口隐藏（非销毁），呼出 &lt;16ms。</summary>
     public void ShowPanel()
     {
+        UpdateStayOpenUi(); // v1.21：同步关闭按钮可见性
         Reposition();
         ClearAnims();
         Opacity = 0;
@@ -247,6 +250,24 @@ public partial class PanelWindow : Window
 
         Left = Math.Max(wa.Left, Math.Min(left, wa.Right - Width));
         Top = Math.Max(wa.Top, Math.Min(top, wa.Bottom - Height));
+    }
+
+    /// <summary>v1.21：常驻模式下的关闭按钮。</summary>
+    private void ClosePanel_Click(object sender, MouseButtonEventArgs e)
+    {
+        HidePanel();
+        e.Handled = true;
+    }
+
+    /// <summary>v1.21：按常驻开关显示/隐藏关闭按钮。</summary>
+    private void UpdateStayOpenUi()
+    {
+        try
+        {
+            var stay = _vm.Store.Config.Settings.PanelStayOpen;
+            ClosePanelButton.Visibility = stay ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch { /* 忽略 */ }
     }
 
     // ---------- v1.13：分组拖拽排序 ----------
