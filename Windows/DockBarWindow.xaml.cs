@@ -500,7 +500,7 @@ public partial class DockBarWindow : Window
         if (sender is not FrameworkElement fe || fe.Tag is not ItemVM item) return;
         e.Handled = true; // 防止冒泡到 Dock 根菜单
 
-        // F7 v0.6：图钉增强菜单
+        // F7 v0.6 / v1.8：图钉完整编辑菜单
         var menu = new ContextMenu { PlacementTarget = fe, Placement = PlacementMode.Top };
 
         var open = new MenuItem { Header = "启动", FontWeight = FontWeights.SemiBold };
@@ -511,6 +511,21 @@ public partial class DockBarWindow : Window
         admin.Click += (_, _) => _vm.LaunchItem(item, asAdmin: true);
         menu.Items.Add(admin);
 
+        menu.Items.Add(new Separator());
+
+        // v1.8：完整编辑能力
+        var edit = new MenuItem { Header = "编辑…（名称/参数/工作目录）" };
+        edit.Click += (_, _) => ShowEditDialog(item);
+        menu.Items.Add(edit);
+
+        var rename = new MenuItem { Header = "重命名…" };
+        rename.Click += (_, _) =>
+        {
+            var name = InputDialog.Show(this, $"重命名「{item.Name}」", item.Name, IsLightTheme());
+            if (!string.IsNullOrWhiteSpace(name)) _vm.RenamePin(item, name);
+        };
+        menu.Items.Add(rename);
+
         if (File.Exists(item.Model.Target) || Directory.Exists(item.Model.Target))
         {
             var locate = new MenuItem { Header = "打开所在位置" };
@@ -518,11 +533,42 @@ public partial class DockBarWindow : Window
             menu.Items.Add(locate);
         }
 
+        menu.Items.Add(new Separator());
+
+        // v1.8：排序
+        var idx = _vm.DockPins.IndexOf(item);
+        var moveLeft = new MenuItem { Header = "左移", IsEnabled = idx > 0 };
+        moveLeft.Click += (_, _) => _vm.MovePin(item, -1);
+        menu.Items.Add(moveLeft);
+
+        var moveRight = new MenuItem { Header = "右移", IsEnabled = idx >= 0 && idx < _vm.DockPins.Count - 1 };
+        moveRight.Click += (_, _) => _vm.MovePin(item, 1);
+        menu.Items.Add(moveRight);
+
+        var toFront = new MenuItem { Header = "移到最前", IsEnabled = idx > 0 };
+        toFront.Click += (_, _) => _vm.MovePinToFront(item);
+        menu.Items.Add(toFront);
+
+        menu.Items.Add(new Separator());
+
         var unpin = new MenuItem { Header = "取消钉选" };
         unpin.Click += (_, _) => _vm.Unpin(item);
         menu.Items.Add(unpin);
 
         menu.IsOpen = true;
+    }
+
+    private bool IsLightTheme()
+        => string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>v1.8：编辑钉选条目（名称/参数/工作目录/管理员）。</summary>
+    private void ShowEditDialog(ItemVM item)
+    {
+        var r = EditItemDialog.Show(this, item.Name, item.Model.Target,
+            item.Model.Args, item.Model.WorkDir, item.Model.RunAsAdmin, IsLightTheme());
+        if (r is null) return;
+        item.Name = r.Name;
+        _vm.UpdatePin(item, r.Args, r.WorkDir, r.RunAsAdmin);
     }
 
     /// <summary>F42 v0.8：Dock 空白处右键 → 新建分组 / 设置 / 置顶开关。</summary>

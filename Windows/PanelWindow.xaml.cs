@@ -435,6 +435,29 @@ public partial class PanelWindow : Window
             menu.Items.Add(move);
         }
 
+        // v1.8：完整编辑（名称/参数/工作目录/管理员）
+        var edit = new MenuItem { Header = "编辑…（名称/参数/工作目录）" };
+        edit.Click += (_, _) =>
+        {
+            var light = string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
+            _suppressHide++;
+            try
+            {
+                var r = EditItemDialog.Show(this, item.Name, item.Model.Target,
+                    item.Model.Args, item.Model.WorkDir, item.Model.RunAsAdmin, light);
+                if (r != null)
+                {
+                    item.Name = r.Name;
+                    item.Model.Args = r.Args;
+                    item.Model.WorkDir = r.WorkDir;
+                    item.Model.RunAsAdmin = r.RunAsAdmin;
+                    _vm.SaveConfig();
+                }
+            }
+            finally { _suppressHide--; }
+        };
+        menu.Items.Add(edit);
+
         var rename = new MenuItem { Header = "重命名" };
         rename.Click += (_, _) =>
         {

@@ -247,6 +247,43 @@ public class MainViewModel : INotifyPropertyChanged
         SaveConfig();
     }
 
+    /// <summary>v1.8：Dock 钉选重命名。</summary>
+    public void RenamePin(ItemVM item, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName)) return;
+        item.Name = newName.Trim();
+        SaveConfig();
+    }
+
+    /// <summary>v1.8：Dock 钉选排序（左移/右移）。</summary>
+    public void MovePin(ItemVM item, int delta)
+    {
+        var i = DockPins.IndexOf(item);
+        if (i < 0) return;
+        var j = i + delta;
+        if (j < 0 || j >= DockPins.Count) return;
+        DockPins.Move(i, j);
+        SaveConfig();
+    }
+
+    /// <summary>v1.8：Dock 钉选置顶到最左。</summary>
+    public void MovePinToFront(ItemVM item)
+    {
+        var i = DockPins.IndexOf(item);
+        if (i <= 0) return;
+        DockPins.Move(i, 0);
+        SaveConfig();
+    }
+
+    /// <summary>v1.8：编辑 Dock 钉选的启动参数/工作目录/管理员标记。</summary>
+    public void UpdatePin(ItemVM item, string args, string workDir, bool runAsAdmin)
+    {
+        item.Model.Args = args ?? "";
+        item.Model.WorkDir = workDir ?? "";
+        item.Model.RunAsAdmin = runAsAdmin;
+        SaveConfig();
+    }
+
     public bool IsPinned(ItemVM item)
         => DockPins.Any(p => string.Equals(p.Model.Target, item.Model.Target, StringComparison.OrdinalIgnoreCase));
 
