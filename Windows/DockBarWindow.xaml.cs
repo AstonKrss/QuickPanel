@@ -89,12 +89,12 @@ public partial class DockBarWindow : Window
                 if (_bare)
                 {
                     // 纯图标：无底无框；alpha=1 隐形薄膜保点击（alpha=0 会穿透）
-                    RootBorder.Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
-                    RootBorder.BorderThickness = new Thickness(0);
+                    PlateBorder.Background = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+                    PlateBorder.BorderThickness = new Thickness(0);
                 }
                 else if (invisible)
                 {
-                    RootBorder.BorderThickness = new Thickness(0);
+                    PlateBorder.BorderThickness = new Thickness(0);
                 }
                 return;
             }
@@ -102,7 +102,7 @@ public partial class DockBarWindow : Window
             // 毛玻璃模式：DWM 背板 + 圆角
             var level = Acrylic.Apply(new WindowInteropHelper(this).Handle, useBackdrop: true);
             if (level == AcrylicLevel.Solid)
-                RootBorder.Background = (Brush)FindResource("SolidSurfaceBrush");
+                PlateBorder.Background = (Brush)FindResource("SolidSurfaceBrush");
 
             // Dock 一律不挂 DropShadowEffect —— Effect 的中间位图会以 RootBorder 边界
             // 裁切内容，图钉上浮放大超出的部分正是被它削掉的（§6.3）
@@ -121,9 +121,9 @@ public partial class DockBarWindow : Window
         Win32.GetWindowRect(new WindowInteropHelper(this).Handle, out var win);
         try
         {
-            var origin = RootBorder.PointToScreen(new Point(0, 0));
-            var w = RootBorder.ActualWidth;
-            var h = RootBorder.ActualHeight;
+            var origin = PlateBorder.PointToScreen(new Point(0, 0));
+            var w = PlateBorder.ActualWidth;
+            var h = PlateBorder.ActualHeight;
             if (w > 0 && h > 0)
             {
                 return new Win32.RECT
@@ -860,7 +860,7 @@ public partial class DockBarWindow : Window
     /// </summary>
     private void Root_DragLeave(object sender, DragEventArgs e)
     {
-        RootBorder.BorderBrush = (Brush)FindResource("HairlineBrush");
+        PlateBorder.BorderBrush = (Brush)FindResource("HairlineBrush");
     }
 
     private void StartFileDrag(FrameworkElement source, string target)
@@ -1048,11 +1048,11 @@ public partial class DockBarWindow : Window
     {
         e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
-        RootBorder.BorderBrush = (Brush)FindResource("AccentBrush");
+        PlateBorder.BorderBrush = (Brush)FindResource("AccentBrush");
     }
 
     private void Dock_DragLeave(object sender, DragEventArgs e)
-        => RootBorder.BorderBrush = (Brush)FindResource("HairlineBrush");
+        => PlateBorder.BorderBrush = (Brush)FindResource("HairlineBrush");
 
     private void Dock_Drop(object sender, DragEventArgs e)
     {

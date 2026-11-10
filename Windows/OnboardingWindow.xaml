@@ -153,9 +153,9 @@
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 左：未整理的程序 -->
-                    <Border Grid.Column="0" Background="#0FFFFFFF" CornerRadius="10"
-                            BorderBrush="#22FFFFFF" BorderThickness="1">
+                    <!-- 左：未整理的程序（也可作为"拖回来"的落点） -->
+                    <Border x:Name="UnassignedZone" Grid.Column="0" Background="#0FFFFFFF" CornerRadius="10"
+                            BorderBrush="#22FFFFFF" BorderThickness="1" AllowDrop="True">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -256,6 +256,13 @@
                                           Margin="0,20,0,0" FontSize="13"
                                           Foreground="#FFDCDDE2" Cursor="Hand"/>
                                 <TextBlock Text="勾选后登录 Windows 时会自动运行，不用每次手动打开。"
+                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF8A90A0"
+                                           TextWrapping="Wrap"/>
+
+                                <CheckBox x:Name="DockAlwaysCheck" Content="Dock 常驻显示（不自动隐藏）"
+                                          Margin="0,16,0,0" FontSize="13" IsChecked="True"
+                                          Foreground="#FFDCDDE2" Cursor="Hand"/>
+                                <TextBlock Text="关闭后，切到别的软件时 Dock 会自动隐藏，鼠标移到屏幕底部才出现。"
                                            Margin="0,5,0,0" FontSize="11.5" Foreground="#FF8A90A0"
                                            TextWrapping="Wrap"/>
                             </StackPanel>

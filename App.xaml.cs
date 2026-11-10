@@ -213,7 +213,10 @@ public partial class App : Application
             _currentBackgroundMode = mode;
             _currentNearInvisible = invisible;
             RecreateWindows(); // AllowsTransparency / 阴影形态必须显示前设定 → 重建
+            return;
         }
+        // v1.26：仅颜色变化时，让 Dock 重新应用文字色等令牌（不重建窗口）
+        _dock?.ApplyLayout();
     }
 
     private void ApplyLayout()

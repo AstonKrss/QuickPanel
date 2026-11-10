@@ -10,22 +10,27 @@
         <WindowChrome GlassFrameThickness="-1" CaptionHeight="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
 
-    <!-- F20：常驻透明长条（v0.5：背景模式毛玻璃/全透明可切换） -->
-    <!-- v1.6：顶部余量改用 Padding（SizeToContent 会忽略 Margin，导致窗口不增高而内容被挤出） -->
-    <Border x:Name="RootBorder" CornerRadius="16" Margin="0,0,0,2"
-            Background="{DynamicResource SurfaceOverlayBrush}"
-            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
-            Padding="10,7" AllowDrop="True" ClipToBounds="False"
+    <!-- v1.26：窗口最外层透明；浮动所需的上方余量放在胶囊**外面**，
+         这样带底板模式下胶囊紧贴内容，不会出现上下大片空白。 -->
+    <Border x:Name="RootBorder" Background="Transparent" BorderThickness="0"
+            AllowDrop="True" ClipToBounds="False"
             DragOver="Dock_DragOver" DragLeave="Dock_DragLeave" Drop="Dock_Drop"
             MouseMove="Dock_MouseMove"
             MouseLeftButtonDown="Root_Down" MouseRightButtonUp="Root_RightClick">
-        <!-- 外层 Grid 承载顶部余量：Grid 高度参与 SizeToContent 计算 -->
         <Grid x:Name="HeadroomHost">
             <Grid.RowDefinitions>
+                <!-- 浮动余量：仅用于让放大后的图标不被窗口裁切，本身不可见 -->
                 <RowDefinition x:Name="HeadroomRow" Height="20"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <StackPanel x:Name="DockContent" Grid.Row="1" Orientation="Horizontal" ClipToBounds="False">
+
+            <!-- 可见的胶囊（底板/描边都挂这里） -->
+            <Border x:Name="PlateBorder" Grid.Row="1" Margin="0,0,0,2"
+                    CornerRadius="16"
+                    Background="{DynamicResource SurfaceOverlayBrush}"
+                    BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+                    Padding="10,7">
+                <StackPanel x:Name="DockContent" Orientation="Horizontal" ClipToBounds="False">
             <StackPanel.LayoutTransform>
                 <ScaleTransform x:Name="ContentScale" ScaleX="1" ScaleY="1"/>
             </StackPanel.LayoutTransform>
@@ -164,8 +169,9 @@
                     <TextBlock x:Name="MonitorLine2" Text="内存 --" FontSize="9.5"
                                Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </StackPanel>
-            </StackPanel>
-            </StackPanel>
+                </StackPanel>
+                </StackPanel>
+            </Border>
         </Grid>
     </Border>
 </Window>

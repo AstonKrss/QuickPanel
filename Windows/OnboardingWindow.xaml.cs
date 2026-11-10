@@ -30,6 +30,7 @@ public partial class OnboardingWindow : Window
 
     private Point _dragStart;
     private ScannedApp? _dragCandidate;
+    private ScannedApp? _zoneDragCandidate;
 
     public OnboardingWindow(MainViewModel vm, Action<string> applyHotkey, Action applyAppearance)
     {
@@ -59,10 +60,30 @@ public partial class OnboardingWindow : Window
 
         HotkeyBox.Text = vm.Store.Config.Settings.Hotkey;
         AutostartCheck.IsChecked = Autostart.IsEnabled();
+        DockAlwaysCheck.IsChecked = vm.Store.Config.Settings.DockAlwaysVisible;
         BuildAccentPalette();
         BuildTextColorPalette();
         InitAppearanceSelection();
         ShowStep(0);
+
+        // v1.26：左侧未整理区也是落点 —— 拖回来即可"改错"
+        UnassignedZone.DragOver += (_, e) =>
+        {
+            var ok = e.Data.GetDataPresent(DragFormat);
+            e.Effects = ok ? DragDropEffects.Move : DragDropEffects.None;
+            UnassignedZone.Background = new SolidColorBrush(ok
+                ? Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF)
+                : Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+            e.Handled = true;
+        };
+        UnassignedZone.DragLeave += (_, _) =>
+            UnassignedZone.Background = new SolidColorBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+        UnassignedZone.Drop += (_, e) =>
+        {
+            UnassignedZone.Background = new SolidColorBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+            if (e.Data.GetData(DragFormat) is ScannedApp app) ReturnToUnassigned(app);
+            e.Handled = true;
+        };
 
         // 固定在主屏居中显示
         var wa = SystemParameters.WorkArea;
@@ -132,6 +153,9 @@ public partial class OnboardingWindow : Window
             // 开机自启
             try { Autostart.SetEnabled(AutostartCheck.IsChecked == true); }
             catch { /* 写注册表失败不影响流程 */ }
+
+            // Dock 是否常驻
+            _vm.Store.Config.Settings.DockAlwaysVisible = DockAlwaysCheck.IsChecked == true;
         }
 
         if (_step == 4) { Finish(); return; }
@@ -336,7 +360,9 @@ public partial class OnboardingWindow : Window
         // 常用（Dock）
         GroupZonesHost.Children.Add(CreateZone(
             "常用（Dock 上显示）", _vm.DockPins.Count,
-            () => _vm.DockPins.Select(p => (p.Icon, p.Name)).ToList(),
+            () => _vm.DockPins
+                .Select(p => (p.Icon, p.Name, FindScanned(p.Model.Target)))
+                .ToList(),
             app => AddToDock(app)));
 
         // 各分组
@@ -345,7 +371,9 @@ public partial class OnboardingWindow : Window
             var g = group;
             GroupZonesHost.Children.Add(CreateZone(
                 g.Name, g.Items.Count,
-                () => g.Items.Select(i => (i.Icon, i.Name)).ToList(),
+                () => g.Items
+                    .Select(i => (i.Icon, i.Name, FindScanned(i.Model.Target)))
+                    .ToList(),
                 app => AddToGroup(app, g)));
         }
 
@@ -363,10 +391,16 @@ public partial class OnboardingWindow : Window
         }
     }
 
-    /// <summary>创建一个可放置的分组区。</summary>
+    /// <summary>按目标路径找回扫描记录（用于把分组/常用里的图标再拖走）。</summary>
+    private ScannedApp? FindScanned(string target)
+        => _all.FirstOrDefault(a =>
+            string.Equals(a.Item.Target, target, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>创建一个可放置的分组区（区内图标可再次拖走）。</summary>
     private Border CreateZone(string title, int count,
-        Func<List<(ImageSource? Icon, string Name)>> itemsGetter,
-        Action<ScannedApp> onDrop)
+        Func<List<(ImageSource? Icon, string Name, ScannedApp? App)>> itemsGetter,
+        Action<ScannedApp> onDrop,
+        Action<ScannedApp>? onItemDragOut = null)
     {
         var header = new TextBlock
         {
@@ -377,11 +411,46 @@ public partial class OnboardingWindow : Window
         };
 
         var content = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
-        foreach (var (icon, n) in itemsGetter())
+        foreach (var (icon, n, app) in itemsGetter())
         {
-            var img = new Image { Source = icon, Width = 26, Height = 26, Stretch = Stretch.Uniform, ToolTip = n };
+            var img = new Image
+            {
+                Source = icon,
+                Width = 26,
+                Height = 26,
+                Stretch = Stretch.Uniform,
+                ToolTip = app is null ? n : $"{n}（可再拖到别处）",
+                Tag = app,
+            };
             RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
             img.Margin = new Thickness(0, 0, 6, 4);
+
+            // v1.26：区内图标可继续拖动 —— 拖到其它区或拖回左侧即可改错
+            if (app is not null)
+            {
+                img.Cursor = Cursors.Hand;
+                img.MouseLeftButtonDown += (_, e) =>
+                {
+                    _zoneDragCandidate = app;
+                    _dragStart = e.GetPosition(this);
+                };
+                img.MouseMove += (s, e) =>
+                {
+                    if (_zoneDragCandidate is null || e.LeftButton != MouseButtonState.Pressed) return;
+                    var pos = e.GetPosition(this);
+                    if (Math.Abs(pos.X - _dragStart.X) + Math.Abs(pos.Y - _dragStart.Y)
+                        < SystemParameters.MinimumHorizontalDragDistance) return;
+                    var dragged = _zoneDragCandidate;
+                    _zoneDragCandidate = null;
+                    try
+                    {
+                        var data = new DataObject(DragFormat, dragged);
+                        DragDrop.DoDragDrop((DependencyObject)s!, data, DragDropEffects.Copy);
+                    }
+                    catch { /* 取消 */ }
+                };
+            }
+
             content.Children.Add(img);
         }
 
@@ -437,18 +506,61 @@ public partial class OnboardingWindow : Window
     {
         if (group.Items.Any(i => string.Equals(i.Model.Target, app.Item.Target, StringComparison.OrdinalIgnoreCase)))
         {
-            RemoveFromUnassigned(app);
+            RemoveEverywhere(app, exceptGroup: group);
+            RefreshUnassigned();
+            RefreshGroupZones();
             return;
         }
+
+        RemoveEverywhere(app, exceptGroup: group);   // v1.26：先从常用/其它分组移除，避免复制成两份
         group.AddItem(new ItemVM(app.Item, _vm.Icons));
-        RemoveFromUnassigned(app);
+        _unassigned.Remove(app);
+        RefreshUnassigned();
         RefreshGroupZones();
     }
 
     private void AddToDock(ScannedApp app)
     {
+        if (_vm.DockPins.Any(p => string.Equals(p.Model.Target, app.Item.Target, StringComparison.OrdinalIgnoreCase)))
+        {
+            RemoveEverywhere(app, exceptDock: true);
+            RefreshUnassigned();
+            RefreshGroupZones();
+            return;
+        }
+
+        RemoveEverywhere(app, exceptDock: true);
         _vm.PinItemDirect(app.Item);
-        RemoveFromUnassigned(app);
+        _unassigned.Remove(app);
+        RefreshUnassigned();
+        RefreshGroupZones();
+    }
+
+    /// <summary>把程序从所有分组与常用中移除（可保留指定目标）。</summary>
+    private void RemoveEverywhere(ScannedApp app, GroupVM? exceptGroup = null, bool exceptDock = false)
+    {
+        foreach (var g in _vm.Groups.ToList())
+        {
+            if (exceptGroup != null && ReferenceEquals(g, exceptGroup)) continue;
+            var hit = g.Items.FirstOrDefault(i =>
+                string.Equals(i.Model.Target, app.Item.Target, StringComparison.OrdinalIgnoreCase));
+            if (hit != null) g.RemoveItem(hit);
+        }
+
+        if (!exceptDock)
+        {
+            var pin = _vm.DockPins.FirstOrDefault(p =>
+                string.Equals(p.Model.Target, app.Item.Target, StringComparison.OrdinalIgnoreCase));
+            if (pin != null) _vm.Unpin(pin);
+        }
+    }
+
+    /// <summary>v1.26：拖回左侧 —— 从分组/常用移除，重新变回"未整理"。</summary>
+    private void ReturnToUnassigned(ScannedApp app)
+    {
+        RemoveEverywhere(app);
+        if (!_unassigned.Contains(app)) _unassigned.Add(app);
+        RefreshUnassigned();
         RefreshGroupZones();
     }
 
@@ -465,19 +577,8 @@ public partial class OnboardingWindow : Window
         foreach (var hex in new[] { "#7C6FFF", "#FF7C6F", "#4FC3F7", "#66BB6A", "#FFD54F", "#E066FF" })
         {
             var color = (Color)ColorConverter.ConvertFromString(hex);
-            var swatch = new Border
-            {
-                Width = 32,
-                Height = 32,
-                CornerRadius = new CornerRadius(8),
-                Background = new SolidColorBrush(color),
-                Margin = new Thickness(0, 0, 10, 0),
-                Cursor = Cursors.Hand,
-                Tag = hex,
-                BorderThickness = new Thickness(2),
-                BorderBrush = Brushes.Transparent,
-            };
-            swatch.MouseLeftButtonUp += (_, _) => SelectAccent(hex);
+            var swatch = MakeSwatch(hex, color, 32);
+            swatch.Click += (_, _) => SelectAccent(hex);
             AccentPalette.Children.Add(swatch);
         }
     }
@@ -487,26 +588,51 @@ public partial class OnboardingWindow : Window
         foreach (var hex in new[] { "#000000", "#FFFFFF", "#1A1A1A", "#7C6FFF", "#FFD54F" })
         {
             var color = (Color)ColorConverter.ConvertFromString(hex);
-            var swatch = new Border
-            {
-                Width = 26,
-                Height = 26,
-                CornerRadius = new CornerRadius(6),
-                Background = new SolidColorBrush(color),
-                BorderThickness = new Thickness(1),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF)),
-                Margin = new Thickness(0, 0, 8, 0),
-                Cursor = Cursors.Hand,
-                Tag = hex,
-            };
-            swatch.MouseLeftButtonUp += (_, _) => TextColorBox.Text = hex;
+            var swatch = MakeSwatch(hex, color, 26);
+            swatch.Click += (_, _) => TextColorBox.Text = hex;
             TextColorPalette.Children.Add(swatch);
         }
     }
 
+    /// <summary>
+    /// v1.26：色板用 Button 而不是 Border ——
+    /// Border 不在 IsInteractive 名单里，点击会被窗口级 DragMove 吞掉（表现为"点了没反应"）。
+    /// </summary>
+    private static Button MakeSwatch(string hex, Color color, double size)
+    {
+        return new Button
+        {
+            Width = size,
+            Height = size,
+            Tag = hex,
+            Margin = new Thickness(0, 0, 10, 0),
+            Cursor = Cursors.Hand,
+            Background = new SolidColorBrush(color),
+            BorderThickness = new Thickness(2),
+            BorderBrush = Brushes.Transparent,
+            ToolTip = hex,
+            Template = CreateSwatchTemplate(),
+        };
+    }
+
+    private static ControlTemplate CreateSwatchTemplate()
+    {
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
+        border.SetValue(Border.BackgroundProperty,
+            new TemplateBindingExtension(BackgroundProperty));
+        border.SetValue(Border.BorderThicknessProperty,
+            new TemplateBindingExtension(BorderThicknessProperty));
+        border.SetValue(Border.BorderBrushProperty,
+            new TemplateBindingExtension(BorderBrushProperty));
+
+        var template = new ControlTemplate(typeof(Button)) { VisualTree = border };
+        return template;
+    }
+
     private void SelectAccent(string hex)
     {
-        foreach (var child in AccentPalette.Children.OfType<Border>())
+        foreach (var child in AccentPalette.Children.OfType<Button>())
         {
             var match = string.Equals(child.Tag as string, hex, StringComparison.OrdinalIgnoreCase);
             child.BorderBrush = match ? Brushes.White : Brushes.Transparent;
