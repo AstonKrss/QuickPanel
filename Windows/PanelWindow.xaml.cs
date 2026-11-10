@@ -218,15 +218,17 @@ public partial class PanelWindow : Window
     /// <summary>面板相对 Dock 定位：Dock 在上半屏则面板在下，否则在上；水平以 Dock 居中（支持自由位置）。</summary>
     private void Reposition()
     {
-        var wa = SystemParameters.WorkArea;
+        // v1.16：用 Dock 所在显示器的工作区（多屏支持）
         var dock = _dock;
         if (dock is null || !dock.IsLoaded)
         {
-            Left = wa.Left + (wa.Width - Width) / 2;
-            Top = wa.Bottom - Height - 72;
+            var cursorArea = ScreenHelper.GetWorkAreaAtCursor();
+            Left = cursorArea.Left + (cursorArea.Width - Width) / 2;
+            Top = cursorArea.Bottom - Height - 72;
             return;
         }
 
+        var wa = ScreenHelper.GetWorkAreaForWindow(dock);
         var left = dock.Left + (dock.ActualWidth - Width) / 2;
         double top;
         if (dock.Top < wa.Top + wa.Height / 2)

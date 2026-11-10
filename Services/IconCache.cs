@@ -36,15 +36,19 @@ public class IconCache
     private const uint SHGFI_LARGEICON = 0x00000000;
 
     /// <summary>取图标：缓存命中 → SHGetFileInfo 提取 → 失败回退首字母生成。</summary>
+    /// <summary>v1.16：缓存文件名带尺寸前缀，旧 32px 缓存自动失效并重提 96px。</summary>
     public BitmapSource? GetIcon(LaunchItem item)
     {
-        var fileName = Path.ChangeExtension(Md5Hex(item.Target), ".png");
+        var fileName = Path.ChangeExtension("hq_" + Md5Hex(item.Target), ".png");
         item.IconCache = fileName;
 
         var cached = LoadCached(fileName);
         if (cached != null) return cached;
 
-        var bitmap = ExtractIcon(item.Target) ?? GenerateFallback(item.Name);
+        // v1.16：优先 IShellItemImageFactory 取 96px 高清图标
+        var bitmap = ShellIconFactory.TryGetIcon(item.Target, 96)
+                     ?? ExtractIcon(item.Target)      // 回退 32px
+                     ?? GenerateFallback(item.Name);  // 回退首字母
         SavePng(bitmap, Path.Combine(ConfigStore.IconsDir, fileName));
         return bitmap;
     }

@@ -216,6 +216,23 @@ public partial class DockBarWindow : Window
             {
                 Left = settings.DockX;
                 Top = settings.DockY;
+                // v1.16：若保存位置在已断开的显示器上，拉回可见区域
+                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                {
+                    try
+                    {
+                        var area = ScreenHelper.GetWorkAreaAtCursor();
+                        var before = (Left, Top);
+                        ScreenHelper.ClampWindow(this, area);
+                        if (before != (Left, Top))
+                        {
+                            settings.DockX = Left;
+                            settings.DockY = Top;
+                            _vm.SaveConfig();
+                        }
+                    }
+                    catch { /* 夹取失败忽略 */ }
+                }));
             }
             // 非初始：保持当前位置，不跳位
         }
@@ -304,7 +321,8 @@ public partial class DockBarWindow : Window
     private void Reposition()
     {
         if (_vm.Store.Config.Settings.DockPositionMode == "free") return;
-        var wa = SystemParameters.WorkArea;
+        // v1.16：在 Dock 当前所在显示器上居中（多屏支持）
+        var wa = ScreenHelper.GetWorkAreaForWindow(this);
         Top = wa.Bottom - ActualHeight;
         Left = wa.Left + (wa.Width - ActualWidth) / 2;
     }
