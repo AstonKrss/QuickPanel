@@ -3,52 +3,72 @@ using QuickPanel.Models;
 
 namespace QuickPanel.Services;
 
-/// <summary>首次运行播种：桌面扫描 + 关键词分类进五分组（PRD F43）。</summary>
+/// <summary>
+/// 首次运行播种：桌面扫描 + 关键词分类。
+/// v1.24：分类改为通用 6 类（去掉特定人群的"网安"），并加入厂商/品牌识别。
+/// </summary>
 public static class FirstRunSeeder
 {
     private static readonly (string Id, string Name, string[] Keywords)[] GroupDefs =
     {
-        ("sec", "网安", new[]
-        {
-            "burp", "yakit", "antsword", "蚁剑", "010", "nmap", "sqlmap", "metasploit", "msf",
-            "cobalt", "菜刀", "冰蝎", "哥斯拉", "behinder", "godzilla", "xray", "awvs", "nessus",
-            "goby", "fscan", "kscan", "ida", "x64dbg", "ollydbg", "ghidra", "wireshark",
-            "fiddler", "charles", "hydra", "hashcat", "wappalyzer", "hackbar", "proxifier",
-            "portswigger", "dvwa", "pikachu", "vulhub",
-        }),
+        // 开发 —— IDE / 终端 / 数据库 / 版本控制
         ("dev", "开发", new[]
         {
             "visual studio", "vscode", "code", "cursor", "idea", "datagrip", "pycharm",
-            "webstorm", "rider", "goland", "clion", "android studio", "git", "sourcetree",
-            "tortoisegit", "gitkraken", "bash", "wsl", "docker", "podman", "postman",
-            "apifox", "apidog", "insomnia", "terminal", "powershell", "cmder",
-            "tabby", "mobaxterm", "xshell", "finalshell", "securecrt", "navicat", "dbeaver",
-            "heidisql", "redis", "mysql", "mongodb",
+            "webstorm", "rider", "goland", "clion", "android studio", "sublime",
+            "git", "sourcetree", "tortoisegit", "gitkraken", "github desktop",
+            "bash", "wsl", "docker", "podman", "postman", "apifox", "apidog", "insomnia",
+            "terminal", "powershell", "cmd", "cmder", "tabby", "mobaxterm", "xshell",
+            "finalshell", "securecrt", "navicat", "dbeaver", "heidisql", "datagrip",
+            "redis", "mysql", "mongodb", "python", "node", "java", "jdk", "anaconda",
+            "burp", "yakit", "antsword", "蚁剑", "010", "nmap", "ida", "x64dbg", "ghidra",
+            "wireshark", "fiddler", "charles", "jmeter", "phpstudy", "vsc",
         }),
+        // 办公 —— 文档 / 表格 / 演示 / 笔记
+        ("office", "办公", new[]
+        {
+            "word", "excel", "powerpoint", "ppt", "onenote", "outlook", "office",
+            "libreoffice", "wps", "acrobat", "foxit", "pdf", "typora", "marktext",
+            "notion", "evernote", "印象笔记", "obsidian", "xmind", "mindmaster",
+            "石墨", "腾讯文档", "飞书文档", "钉钉文档", "onedrive", "坚果云", "nutstore",
+            "adobe", "photoshop", "illustrator", "after effects", "premiere", "figma",
+            "sketch", "axure", "墨刀", "canva", "剪映", "capcut",
+        }),
+        // 影音 —— 播放器 / 音乐 / 视频平台
+        ("media", "影音", new[]
+        {
+            "potplayer", "vlc", "mpc", "kmplayer", "obs", "foobar", "aimp",
+            "网易云", "cloudmusic", "qq音乐", "qqmusic", "kugou", "酷狗", "kuwo", "酷我",
+            "spotify", "bilibili", "哔哩", "iqiyi", "爱奇艺", "youku", "优酷",
+            "腾讯视频", "芒果", "mgtv", "netflix", "youtube", "抖音", "快手",
+            "audition", "audacity", "格式工厂", "handbrake",
+        }),
+        // 游戏 —— 平台 / 启动器
         ("game", "游戏", new[]
         {
             "steam", "epic", "minecraft", "pcl", "hmcl", "mc launcher", "battle.net",
             "battlenet", "战网", "origin", "ea app", "uplay", "ubisoft", "riot client",
             "league", "英雄联盟", "wegame", "valorant", "无畏契约", "dota", "genshin",
-            "原神", "star rail", "崩坏", "mihoyo", "hoyoplay", "xbox",
+            "原神", "star rail", "崩坏", "mihoyo", "hoyoplay", "xbox", "uu加速", "uu远程",
         }),
-        ("life", "日常", new[]
+        // 社交 —— 即时通讯 / 会议
+        ("social", "社交", new[]
         {
-            "wechat", "weixin", "微信", "wxwork", "企业微信", "qq", "tim", "dingtalk",
-            "钉钉", "feishu", "飞书", "lark", "telegram", "discord", "netease", "网易云",
-            "cloudmusic", "qq音乐", "qqmusic", "kugou", "kuwo", "bilibili", "哔哩",
-            "iqiyi", "爱奇艺", "youku", "优酷", "腾讯视频", "spotify", "foxmail",
-            "邮箱大师", "thunder", "迅雷", "百度网盘", "baidunetdisk", "阿里云盘",
-            "aliyundrive", "夸克", "quark", "腾讯会议", "wemeet", "zoom", "腾讯文档",
-            "notion", "evernote", "印象笔记",
+            "wechat", "weixin", "微信", "wxwork", "企业微信", "qq", "tim",
+            "dingtalk", "钉钉", "feishu", "飞书", "lark", "telegram", "discord",
+            "whatsapp", "line", "skype", "zoom", "腾讯会议", "wemeet", "voov",
+            "teams", "slack", "腾讯", "tencent", "网易", "netease",
         }),
+        // 工具 —— 系统增强 / 压缩 / 截图 / 虚拟机
         ("tools", "工具", new[]
         {
-            "everything", "7-zip", "7zip", "winrar", "bandizip", "360zip", "notepad++",
-            "notepad3", "typora", "marktext", "snipaste", "sharex", "picgo", "potplayer",
-            "mpc", "vlc", "ditto", "listary", "wox", "obs", "vmware", "virtualbox",
-            "ventoy", "rufus", "diskgenius", "aida64", "cpu-z", "gpu-z", "crystaldiskinfo",
-            "trafficmonitor", "traffic monitor", "ccleaner", "geek uninstaller", "aimp", "foobar",
+            "everything", "listary", "wox", "ditto", "7-zip", "7zip", "winrar",
+            "bandizip", "360zip", "好压", "2345", "notepad++", "notepad3",
+            "snipaste", "sharex", "picgo", "vmware", "virtualbox", "ventoy", "rufus",
+            "diskgenius", "分区助手", "aida64", "cpu-z", "gpu-z", "crystaldiskinfo",
+            "trafficmonitor", "traffic monitor", "ccleaner", "geek uninstaller",
+            "火绒", "huorong", "360安全", "腾讯电脑管家", "驱动", "driver",
+            "nvidia", "amd", "intel", "realtek", "微软", "microsoft",
         }),
     };
 

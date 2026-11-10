@@ -218,7 +218,7 @@ public class ScanAddWindow : Window
             return;
         }
 
-        foreach (var groupId in new[] { "sec", "dev", "life", "game", "tools" })
+        foreach (var groupId in new[] { "dev", "office", "media", "game", "social", "tools" })
         {
             var apps = _scanned.Where(a => a.GroupId == groupId).ToList();
             if (apps.Count == 0) continue;

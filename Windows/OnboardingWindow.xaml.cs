@@ -16,15 +16,18 @@ public partial class OnboardingWindow : Window
 {
     private readonly MainViewModel _vm;
     private readonly Action<string> _applyHotkey;
-    private int _step; // 0=欢迎 1=扫描 2=热键 3=完成
+    private readonly Action _applyAppearance;
+    private int _step; // 0=欢迎 1=整理 2=热键 3=外观 4=完成
     private List<ScannedApp> _scanned = new();
     private readonly List<CheckBox> _checkBoxes = new();
+    private bool _appearanceReady;
 
-    public OnboardingWindow(MainViewModel vm, Action<string> applyHotkey)
+    public OnboardingWindow(MainViewModel vm, Action<string> applyHotkey, Action applyAppearance)
     {
         InitializeComponent();
         _vm = vm;
         _applyHotkey = applyHotkey;
+        _applyAppearance = applyAppearance;
 
         // 圆角 + 深色标题栏（无边框，但仍调用一次统一主题）
         SourceInitialized += (_, _) =>
@@ -48,53 +51,129 @@ public partial class OnboardingWindow : Window
         };
 
         HotkeyBox.Text = vm.Store.Config.Settings.Hotkey;
+        BuildAccentPalette();
+        InitAppearanceSelection();
         ShowStep(0);
+
+        // v1.24：固定在主屏居中显示 —— 不跟随鼠标所在的副屏，避免用户在主屏看不到向导
+        var wa = SystemParameters.WorkArea;
+        Left = wa.Left + (wa.Width - Width) / 2;
+        Top = wa.Top + (wa.Height - Height) / 2;
+    }
+
+    // ---------- v1.24：外观 ----------
+
+    private void BuildAccentPalette()
+    {
+        var colors = new[] { "#7C6FFF", "#FF7C6F", "#4FC3F7", "#66BB6A", "#FFD54F", "#E066FF" };
+        foreach (var hex in colors)
+        {
+            var color = (Color)ColorConverter.ConvertFromString(hex);
+            var swatch = new Border
+            {
+                Width = 34,
+                Height = 34,
+                CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(color),
+                Margin = new Thickness(0, 0, 10, 0),
+                Cursor = Cursors.Hand,
+                Tag = hex,
+                BorderThickness = new Thickness(2),
+                BorderBrush = Brushes.Transparent,
+            };
+            swatch.MouseLeftButtonUp += (_, _) => SelectAccent(hex);
+            AccentPalette.Children.Add(swatch);
+        }
+    }
+
+    private void SelectAccent(string hex)
+    {
+        foreach (var child in AccentPalette.Children.OfType<Border>())
+        {
+            var isMatch = string.Equals(child.Tag as string, hex, StringComparison.OrdinalIgnoreCase);
+            child.BorderBrush = isMatch ? Brushes.White : Brushes.Transparent;
+        }
+        _vm.Store.Config.Settings.AccentColor = hex;
+        try { _applyAppearance(); } catch { /* 应用失败不影响 */ }
+    }
+
+    private void InitAppearanceSelection()
+    {
+        _appearanceReady = false;
+        var mode = _vm.Store.Config.Settings.BackgroundMode;
+        AcrylicRadio.IsChecked = string.Equals(mode, "acrylic", StringComparison.OrdinalIgnoreCase);
+        InvisibleRadio.IsChecked = string.Equals(mode, "invisible", StringComparison.OrdinalIgnoreCase);
+        TransparentRadio.IsChecked = AcrylicRadio.IsChecked != true && InvisibleRadio.IsChecked != true;
+        // 默认选中当前强调色
+        SelectAccent(_vm.Store.Config.Settings.AccentColor);
+        _appearanceReady = true;
+    }
+
+    private void Appearance_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_appearanceReady) return;
+        _vm.Store.Config.Settings.BackgroundMode =
+            AcrylicRadio.IsChecked == true ? "acrylic"
+            : InvisibleRadio.IsChecked == true ? "invisible"
+            : "transparent";
+        try { _applyAppearance(); } catch { /* 忽略 */ }
+    }
+
+    private void IncludeStartMenu_Changed(object sender, RoutedEventArgs e)
+    {
+        StartScan();
     }
 
     // ---------- 步骤切换 ----------
 
     private void ShowStep(int step)
     {
-        _step = Math.Clamp(step, 0, 3);
+        _step = Math.Clamp(step, 0, 4);
 
         PageWelcome.Visibility = _step == 0 ? Visibility.Visible : Visibility.Collapsed;
         PageScan.Visibility = _step == 1 ? Visibility.Visible : Visibility.Collapsed;
         PageHotkey.Visibility = _step == 2 ? Visibility.Visible : Visibility.Collapsed;
-        PageDone.Visibility = _step == 3 ? Visibility.Visible : Visibility.Collapsed;
+        PageAppearance.Visibility = _step == 3 ? Visibility.Visible : Visibility.Collapsed;
+        PageDone.Visibility = _step == 4 ? Visibility.Visible : Visibility.Collapsed;
 
         // 标题
         (TitleText.Text, SubtitleText.Text) = _step switch
         {
-            0 => ("欢迎使用 QuickPanel", "三步完成配置，马上开始使用"),
-            1 => ("扫描你电脑上的程序", "勾选要加入面板的程序，会自动分好类"),
-            2 => ("设置全局热键", "任何时候按下都能呼出面板"),
+            0 => ("欢迎使用 QuickPanel", "几步完成配置，马上开始使用"),
+            1 => ("整理桌面上的程序", "勾选要放上面板的，会自动分好类"),
+            2 => ("设置呼出快捷键", "任何时候按下都能呼出面板"),
+            3 => ("选一个你喜欢的样子", "改完立即生效，之后也能随时调整"),
             _ => ("全部就绪", "开始使用你的启动面板"),
         };
 
         // 步骤点
-        var dots = new[] { Dot1, Dot2, Dot3 };
+        var dots = new[] { Dot1, Dot2, Dot3, Dot4 };
         for (var i = 0; i < dots.Length; i++)
             dots[i].Fill = new SolidColorBrush(i <= _step
                 ? Color.FromRgb(0x7C, 0x6F, 0xFF)
                 : Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
 
         // 按钮
-        BackBtn.Visibility = _step is > 0 and < 3 ? Visibility.Visible : Visibility.Collapsed;
-        SkipBtn.Visibility = _step is > 0 and < 3 ? Visibility.Visible : Visibility.Collapsed;
+        BackBtn.Visibility = _step is > 0 and < 4 ? Visibility.Visible : Visibility.Collapsed;
+        SkipBtn.Visibility = _step is > 0 and < 4 ? Visibility.Visible : Visibility.Collapsed;
         NextBtn.Content = _step switch
         {
             0 => "开始设置",
             1 => "下一步",
             2 => "下一步",
+            3 => "下一步",
             _ => "开始使用",
         };
 
         if (_step == 1) StartScan();
-        if (_step == 3) UpdateDoneSummary();
+        if (_step == 3) InitAppearanceSelection();
+        if (_step == 4) UpdateDoneSummary();
     }
 
     private void Next_Click(object sender, RoutedEventArgs e)
     {
+        if (_step == 1) ApplySelectedApps();
+
         if (_step == 2)
         {
             // 校验热键
@@ -108,13 +187,10 @@ public partial class OnboardingWindow : Window
             HotkeyError.Visibility = Visibility.Collapsed;
             _vm.Store.Config.Settings.Hotkey = text;
             _applyHotkey(text);   // 立即注册（失败会自动回退并提示）
-            // 回退后的实际热键可能变了，同步输入框
             HotkeyBox.Text = _vm.Store.Config.Settings.Hotkey;
         }
 
-        if (_step == 3) { Finish(); return; }
-
-        if (_step == 1) ApplySelectedApps();
+        if (_step == 4) { Finish(); return; }
 
         ShowStep(_step + 1);
     }
@@ -132,13 +208,13 @@ public partial class OnboardingWindow : Window
 
     private void StartScan()
     {
-        ScanSummaryText.Text = "正在扫描桌面与开始菜单…";
+        ScanSummaryText.Text = "正在整理…";
         ScanListHost.Children.Clear();
         _checkBoxes.Clear();
 
         try
         {
-            _scanned = AppScanner.Scan();
+            _scanned = AppScanner.Scan(includeStartMenu: IncludeStartMenuCheck.IsChecked == true);
         }
         catch
         {
@@ -147,11 +223,14 @@ public partial class OnboardingWindow : Window
 
         if (_scanned.Count == 0)
         {
-            ScanSummaryText.Text = "没有找到快捷方式。你可以稍后拖文件到面板里添加。";
+            ScanSummaryText.Text = IncludeStartMenuCheck.IsChecked == true
+                ? "没有找到程序。你可以稍后把文件拖到面板里添加。"
+                : "桌面上没有快捷方式。勾选上面的选项可以整理开始菜单里的程序。";
             return;
         }
 
-        ScanSummaryText.Text = $"找到 {_scanned.Count} 个程序，已默认勾选 {_scanned.Count(a => a.IsSelected)} 个（桌面 + 开始菜单，已去重）";
+        var selected = _scanned.Count(a => a.IsSelected);
+        ScanSummaryText.Text = $"找到 {_scanned.Count} 个程序，已为你勾选 {selected} 个";
         RenderList(_scanned);
     }
 
@@ -162,7 +241,7 @@ public partial class OnboardingWindow : Window
         _checkBoxes.Clear();
 
         var first = true;
-        foreach (var groupId in new[] { "sec", "dev", "life", "game", "tools" })
+        foreach (var groupId in new[] { "dev", "office", "media", "game", "social", "tools" })
         {
             var groupApps = apps.Where(a => a.GroupId == groupId).ToList();
             if (groupApps.Count == 0) continue;
@@ -243,12 +322,8 @@ public partial class OnboardingWindow : Window
             return;
         }
 
-        // 确保五个分组存在
-        foreach (var (id, name) in new[]
-                 {
-                     ("sec", "网安"), ("dev", "开发"), ("life", "日常"),
-                     ("game", "游戏"), ("tools", "工具"),
-                 })
+        // 确保六个分组存在
+        foreach (var (id, name) in StandardGroups)
         {
             if (_vm.Groups.All(g => g.Id != id))
                 _vm.AddGroupInternal(id, name);
@@ -296,27 +371,28 @@ public partial class OnboardingWindow : Window
             vm.PinItemDirect(it);
     }
 
-    /// <summary>用户跳过或没选任何程序时：保证有 5 个空分组可用。</summary>
+    /// <summary>用户跳过或没选任何程序时：保证有标准分组可用。</summary>
     private void ApplyDefaultSeedIfEmpty()
     {
         if (_vm.Groups.Count > 0) return;
-        foreach (var (id, name) in new[]
-                 {
-                     ("sec", "网安"), ("dev", "开发"), ("life", "日常"),
-                     ("game", "游戏"), ("tools", "工具"),
-                 })
-        {
+        foreach (var (id, name) in StandardGroups)
             _vm.AddGroupInternal(id, name);
-        }
         _vm.SaveConfig();
     }
+
+    /// <summary>v1.24：标准分组（通用 6 类，不含特定人群类目）。</summary>
+    private static readonly (string Id, string Name)[] StandardGroups =
+    {
+        ("dev", "开发"), ("office", "办公"), ("media", "影音"),
+        ("game", "游戏"), ("social", "社交"), ("tools", "工具"),
+    };
 
     private void UpdateDoneSummary()
     {
         var total = _vm.Groups.Sum(g => g.Items.Count);
         DoneSummaryText.Text =
-            $"已添加 {total} 个程序到 {_vm.Groups.Count} 个分组，Dock 钉选 {_vm.DockPins.Count} 个。\n" +
-            "之后随时可以在设置里重新扫描或手动添加。";
+            $"已把 {total} 个程序整理到 {_vm.Groups.Count} 个分组，Dock 上放了 {_vm.DockPins.Count} 个常用。\n" +
+            "之后随时可以在设置里继续添加或调整。";
         DoneHotkeyRun.Text = _vm.Store.Config.Settings.Hotkey;
     }
 

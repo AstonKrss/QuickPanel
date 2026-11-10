@@ -134,7 +134,7 @@ public partial class App : Application
     {
         try
         {
-            var wizard = new OnboardingWindow(_vm!, ApplyHotkey);
+            var wizard = new OnboardingWindow(_vm!, ApplyHotkey, ApplyAppearance);
             wizard.ShowDialog();
 
             // 向导结束后刷新界面（分组/钉选/热键可能变了）

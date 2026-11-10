@@ -25,13 +25,18 @@ public class ScannedApp
 /// </summary>
 public static class AppScanner
 {
-    /// <summary>扫描桌面 + 开始菜单，返回去重后的候选列表（已分类）。</summary>
-    public static List<ScannedApp> Scan()
+    /// <summary>
+    /// 扫描快捷方式，返回去重后的候选列表（已分类）。
+    /// v1.24：默认只扫桌面 —— 产品定位是"整理桌面上摆放的程序"；
+    /// 开始菜单里大量系统工具（讲述人、注册表编辑器等）不是用户想放到面板的东西。
+    /// includeStartMenu=true 时才额外扫描开始菜单。
+    /// </summary>
+    public static List<ScannedApp> Scan(bool includeStartMenu = false)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<ScannedApp>();
 
-        foreach (var (dir, source) in EnumerateScanDirs())
+        foreach (var (dir, source) in EnumerateScanDirs(includeStartMenu))
         {
             if (!Directory.Exists(dir)) continue;
             IEnumerable<string> files;
@@ -50,7 +55,8 @@ public static class AppScanner
         // 排序：先按分组顺序，再按名称
         var groupOrder = new Dictionary<string, int>
         {
-            ["sec"] = 0, ["dev"] = 1, ["life"] = 2, ["game"] = 3, ["tools"] = 4,
+            ["dev"] = 0, ["office"] = 1, ["media"] = 2,
+            ["game"] = 3, ["social"] = 4, ["tools"] = 5,
         };
         return result
             .OrderBy(a => groupOrder.TryGetValue(a.GroupId, out var i) ? i : 99)
@@ -84,11 +90,13 @@ public static class AppScanner
         catch { /* 单个快捷方式解析失败不影响整体 */ }
     }
 
-    private static IEnumerable<(string Dir, string Source)> EnumerateScanDirs()
+    private static IEnumerable<(string Dir, string Source)> EnumerateScanDirs(bool includeStartMenu)
     {
-        // 桌面
+        // 桌面（用户 + 公共）—— 始终扫描
         yield return (Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "桌面");
         yield return (Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "桌面");
+
+        if (!includeStartMenu) yield break;
 
         // 开始菜单（用户 + 所有用户），含一层子目录
         var startMenus = new[]
@@ -99,7 +107,6 @@ public static class AppScanner
         foreach (var sm in startMenus.Where(Directory.Exists))
         {
             yield return (Path.Combine(sm, "Programs"), "开始菜单");
-            // Programs 下常见一层子文件夹（如「开发工具」）
             string[] subs;
             try { subs = Directory.GetDirectories(Path.Combine(sm, "Programs")); }
             catch { subs = Array.Empty<string>(); }
@@ -111,10 +118,11 @@ public static class AppScanner
     /// <summary>取分组显示名（用于向导中的分类标题）。</summary>
     public static string GroupDisplayName(string groupId) => groupId switch
     {
-        "sec" => "网安",
         "dev" => "开发",
-        "life" => "日常",
+        "office" => "办公",
+        "media" => "影音",
         "game" => "游戏",
+        "social" => "社交",
         _ => "工具",
     };
 }
