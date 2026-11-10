@@ -38,6 +38,13 @@ public partial class SettingsWindow : Window
 
         var settings = vm.Store.Config.Settings;
 
+        // v1.29：混合 DPI 多屏下 WPF 的 CenterScreen 会算到屏幕外（实测 Left=-98），
+        // 改为按鼠标所在显示器的工作区手动居中。
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        var wa = ScreenHelper.GetWorkAreaAtCursor();
+        Left = wa.Left + Math.Max(0, (wa.Width - Width) / 2);
+        Top = wa.Top + Math.Max(0, (wa.Height - Height) / 2);
+
         // 版本号取自程序集，不再写死（v1.1 修正：此前硬编码导致显示落后）
         // v1.11：版本号显示改为 "版本 1.10.0"，避免 "v1.10" 被误读为 "v1.1"
         var ver = Assembly.GetExecutingAssembly().GetName().Version;
@@ -58,6 +65,9 @@ public partial class SettingsWindow : Window
         ModeInvisibleRadio.IsChecked = string.Equals(settings.BackgroundMode, "invisible", StringComparison.OrdinalIgnoreCase);
         SurfaceColorBox.Text = settings.SurfaceColor;
         AccentColorBox.Text = settings.AccentColor;
+        PanelSurfaceColorBox.Text = settings.PanelSurfaceColor;
+        PanelOpacitySlider.Value = Math.Clamp(settings.PanelOpacity, 0.12, 1.0);
+        PanelOpacityText.Text = $"{Math.Clamp(settings.PanelOpacity, 0.12, 1.0) * 100:0}%";
         OpacitySlider.Value = settings.Opacity;
         OpacityValueText.Text = $"{Math.Round(settings.Opacity, 2) * 100:0}%";
         PosCenterRadio.IsChecked = settings.DockPositionMode != "free";
@@ -236,6 +246,15 @@ public partial class SettingsWindow : Window
         SurfaceColorBox.TextChanged += (_, _) => ApplyColor(SurfaceColorBox, isAccent: false);
         AccentColorBox.TextChanged += (_, _) => ApplyColor(AccentColorBox, isAccent: true);
         DockTextColorBox.TextChanged += (_, _) => ApplyDockTextColor();
+        PanelSurfaceColorBox.TextChanged += (_, _) => ApplyPanelSurfaceColor();
+        PanelOpacitySlider.ValueChanged += (_, _) =>
+        {
+            var value = Math.Round(PanelOpacitySlider.Value, 2);
+            PanelOpacityText.Text = $"{value * 100:0}%";
+            if (_initializing) return;
+            settings.PanelOpacity = value;
+            _appearanceChanged();
+        };
 
         // 初始化时同步滑杆可用性
         HideDelaySlider.IsEnabled = !settings.PanelStayOpen;
@@ -298,6 +317,25 @@ public partial class SettingsWindow : Window
         if (parts[0] == "surface") SurfaceColorBox.Text = parts[1];
         else if (parts[0] == "accent") AccentColorBox.Text = parts[1];
         else if (parts[0] == "docktext") DockTextColorBox.Text = parts[1];
+        else if (parts[0] == "panelsurface") PanelSurfaceColorBox.Text = parts[1];
+    }
+
+    /// <summary>v1.29：面板底色实时生效（只接受 #RRGGBB / #AARRGGBB）。</summary>
+    private void ApplyPanelSurfaceColor()
+    {
+        if (_initializing) return;
+        var hex = PanelSurfaceColorBox.Text.Trim();
+        if (hex.Length == 0) return;
+        try
+        {
+            _ = (Color)ColorConverter.ConvertFromString(hex);
+        }
+        catch
+        {
+            return;
+        }
+        _vm.Store.Config.Settings.PanelSurfaceColor = hex;
+        _appearanceChanged();
     }
 
     /// <summary>v1.4：Dock 文字颜色实时生效。</summary>
@@ -349,6 +387,11 @@ public partial class SettingsWindow : Window
             4 => "分组",
             _ => "数据",
         };
+
+        // v1.29：切分区回到顶部（内容比窗口高，否则会停在上一页的滚动位置）
+        ScrollGeneral?.ScrollToTop();
+        ScrollAppearance?.ScrollToTop();
+        ScrollDock?.ScrollToTop();
     }
 
     // ---------- 设置主题（v0.8）----------
@@ -437,6 +480,8 @@ public partial class SettingsWindow : Window
         settings.BackgroundMode = "transparent";
         settings.SurfaceColor = "#3C151518";
         settings.AccentColor = "#7C6FFF";
+        settings.PanelSurfaceColor = "#151518";
+        settings.PanelOpacity = 0.94;
         settings.IconScale = 1.0;
         settings.PanelScale = 1.0;
         settings.DockPositionMode = "bottomCenter";
@@ -454,6 +499,9 @@ public partial class SettingsWindow : Window
         ModeInvisibleRadio.IsChecked = false;
         SurfaceColorBox.Text = settings.SurfaceColor;
         AccentColorBox.Text = settings.AccentColor;
+        PanelSurfaceColorBox.Text = settings.PanelSurfaceColor;
+        PanelOpacitySlider.Value = Math.Clamp(settings.PanelOpacity, 0.12, 1.0);
+        PanelOpacityText.Text = $"{PanelOpacitySlider.Value * 100:0}%";
         IconScaleSlider.Value = 1.0;
         WidgetScaleSlider.Value = 1.0;
         PanelScaleSlider.Value = 1.0;

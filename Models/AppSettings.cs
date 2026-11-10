@@ -77,6 +77,12 @@ public class AppSettings
     /// <summary>强调色 #RRGGBB（选中态自动派生同色低透明）。</summary>
     public string AccentColor { get; set; } = "#7C6FFF";
 
+    /// <summary>v1.29：面板底色 #RRGGBB。与 Dock 底色分开 —— 为 Dock 调透明不该把面板也拖到看不见。</summary>
+    public string PanelSurfaceColor { get; set; } = "#151518";
+
+    /// <summary>v1.29：面板底板不透明度 0.12–1.0（与底色组合成最终 ARGB）。</summary>
+    public double PanelOpacity { get; set; } = 0.94;
+
     // v0.5 Dock 自定义
     /// <summary>位置：bottomCenter（默认）/ free（⠿ 手柄拖动）。</summary>
     public string DockPositionMode { get; set; } = "bottomCenter";

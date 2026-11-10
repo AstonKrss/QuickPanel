@@ -196,6 +196,7 @@
                 <!-- ── 常规 ── -->
                 <Grid x:Name="SecGeneral">
                     <Border Style="{StaticResource Card}">
+                        <ScrollViewer x:Name="ScrollGeneral" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
                             <TextBlock Text="设置主题"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
@@ -219,20 +220,22 @@
                                            Foreground="{DynamicResource SbText}"/>
                             </Grid>
                         </StackPanel>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
 
                 <!-- ── 外观 ── -->
                 <Grid x:Name="SecAppearance" Visibility="Collapsed">
                     <Border Style="{StaticResource Card}">
+                        <ScrollViewer x:Name="ScrollAppearance" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-                            <TextBlock Text="背景模式"/>
+                            <TextBlock Text="Dock 背景模式"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <RadioButton x:Name="ModeAcrylicRadio" Content="毛玻璃" GroupName="bgmode" Checked="Mode_Changed" Unchecked="Mode_Changed"/>
                                 <RadioButton x:Name="ModeTransparentRadio" Content="全透明" GroupName="bgmode" Checked="Mode_Changed" Unchecked="Mode_Changed"/>
                                 <RadioButton x:Name="ModeInvisibleRadio" Content="完全隐形（无底板）" GroupName="bgmode" Checked="Mode_Changed" Unchecked="Mode_Changed"/>
                             </StackPanel>
-                            <TextBlock Text="底色 #AARRGGBB（仅「全透明」模式生效；选「完全隐形」可一键无底板）" Margin="0,16,0,0"/>
+                            <TextBlock Text="Dock 底色 #AARRGGBB（仅「全透明」模式生效；选「完全隐形」可一键无底板）" Margin="0,16,0,0"/>
                             <Grid Margin="0,6,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120"/>
@@ -261,7 +264,39 @@
                                     <Button Style="{StaticResource SwatchButton}" Background="#FFD54F" Tag="accent|#FFD54F" Click="Swatch_Click" ToolTip="黄"/>
                                 </StackPanel>
                             </Grid>
-                            <TextBlock Text="面板透明度（整体，实时预览）" Margin="0,16,0,0"/>
+
+                            <!-- v1.29：面板独立底板（跟 Dock 分开，Dock 调透明不会把面板一起拖没） -->
+                            <TextBlock Text="面板底色 #RRGGBB" Margin="0,16,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="PanelSurfaceColorBox" Height="30" VerticalContentAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource SwatchButton}" Background="#151518" Tag="panelsurface|#151518" Click="Swatch_Click" ToolTip="近黑"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#20242E" Tag="panelsurface|#20242E" Click="Swatch_Click" ToolTip="蓝灰"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#2A2A2A" Tag="panelsurface|#2A2A2A" Click="Swatch_Click" ToolTip="深灰"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#F2F3F7" Tag="panelsurface|#F2F3F7" Click="Swatch_Click" ToolTip="浅色"/>
+                                    <Button Style="{StaticResource SwatchButton}" Background="#1B2A3A" Tag="panelsurface|#1B2A3A" Click="Swatch_Click" ToolTip="深蓝"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="面板不透明度" Margin="0,14,0,0"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="48"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="PanelOpacitySlider" Minimum="0.12" Maximum="1.0"
+                                        Value="0.94" TickFrequency="0.01" IsMoveToPointEnabled="True"/>
+                                <TextBlock x:Name="PanelOpacityText" Grid.Column="1"
+                                           Text="94%" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SbText}"/>
+                            </Grid>
+                            <TextBlock Text="面板是主界面，建议 80% 以上；喜欢贴壁纸可以调低，文字会自动反色。"
+                                       Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
+
+                            <TextBlock Text="整体不透明度（Dock + 面板，含图标和文字）" Margin="0,16,0,0"/>
                             <Grid Margin="0,6,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition/>
@@ -274,12 +309,14 @@
                                            Foreground="{DynamicResource SbText}"/>
                             </Grid>
                         </StackPanel>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
 
                 <!-- ── Dock ── -->
                 <Grid x:Name="SecDock" Visibility="Collapsed">
                     <Border Style="{StaticResource Card}">
+                        <ScrollViewer x:Name="ScrollDock" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
                             <TextBlock Text="位置"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
@@ -418,6 +455,7 @@
                                    Foreground="{DynamicResource SbText}"/>
                     </Grid>
                         </StackPanel>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
 

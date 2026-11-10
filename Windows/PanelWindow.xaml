@@ -38,8 +38,8 @@
     </Window.Resources>
 
     <Border x:Name="RootBorder" CornerRadius="12"
-            Background="{DynamicResource SurfaceOverlayBrush}"
-            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+            Background="{DynamicResource PanelSurfaceBrush}"
+            BorderBrush="{DynamicResource PanelHairlineBrush}" BorderThickness="1"
             AllowDrop="True" DragOver="Root_DragOver" DragLeave="Root_DragLeave" Drop="Root_Drop"
             MouseRightButtonUp="Root_RightClick">
         <Border.RenderTransform>
@@ -66,12 +66,12 @@
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="SearchBox" Grid.Column="0" Height="34" VerticalContentAlignment="Center"
                          FontSize="13" Style="{StaticResource FlatSearchBox}"
-                         Background="#26FFFFFF" Foreground="{DynamicResource TextPrimaryBrush}"
-                         BorderBrush="{DynamicResource HairlineBrush}"
-                         CaretBrush="{DynamicResource TextPrimaryBrush}"
+                         Background="#26FFFFFF" Foreground="{DynamicResource PanelTextBrush}"
+                         BorderBrush="{DynamicResource PanelHairlineBrush}"
+                         CaretBrush="{DynamicResource PanelTextBrush}"
                          KeyDown="Search_KeyDown" TextChanged="Search_TextChanged"/>
                 <TextBlock x:Name="SearchHint" Text="搜索全部分组（Enter 启动第一个结果，Esc 清空）"
-                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
+                           Foreground="{DynamicResource PanelTextSecondaryBrush}" FontSize="12"
                            Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                 <!-- v1.21：常驻模式下的关闭按钮 -->
                 <Border x:Name="ClosePanelButton" Grid.Column="1" Width="34" Height="34"
@@ -89,7 +89,7 @@
                     </Border.Style>
                     <TextBlock Text="✕" FontSize="15" HorizontalAlignment="Center"
                                VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                               Foreground="{DynamicResource PanelTextSecondaryBrush}"/>
                 </Border>
             </Grid>
 
@@ -100,7 +100,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- F1：分组侧边导航 -->
-                <Border Grid.Column="0" CornerRadius="11,0,0,11" Background="{DynamicResource CardSubtleBrush}">
+                <Border Grid.Column="0" CornerRadius="11,0,0,11" Background="{DynamicResource PanelCardSubtleBrush}">
                     <ListBox x:Name="GroupList" Margin="10,12"
                              Background="Transparent" BorderThickness="0"
                              ItemsSource="{Binding Groups}"
@@ -112,7 +112,7 @@
                              Drop="GroupList_Drop">
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
-                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PanelTextBrush}"/>
                                 <Setter Property="Padding" Value="10,8"/>
                                 <Setter Property="Margin" Value="0,2"/>
                                 <Setter Property="Cursor" Value="Hand"/>
@@ -126,7 +126,7 @@
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CardSubtleBrush}"/>
+                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PanelCardSubtleBrush}"/>
                                                 </Trigger>
                                                 <Trigger Property="IsSelected" Value="True">
                                                     <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SelectedBrush}"/>
@@ -169,7 +169,7 @@
                                     </Border.RenderTransform>
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                                            <Setter Property="Background" Value="{DynamicResource PanelCardBrush}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter Property="Background" Value="#3DFFFFFF"/>
@@ -194,7 +194,7 @@
                                             </Image.Style>
                                         </Image>
                                         <TextBlock Text="{Binding Name}" FontSize="11"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   Foreground="{DynamicResource PanelTextBrush}"
                                                    TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                                    MaxHeight="26" TextAlignment="Center"
                                                    HorizontalAlignment="Center" Margin="0,4,0,0">
@@ -219,7 +219,7 @@
                     <TextBlock Text="这个分组还没有条目&#10;把文件拖到这里，或右键选择「添加条目…」"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                TextAlignment="Center" FontSize="12" LineHeight="20"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource PanelTextSecondaryBrush}"
                                IsHitTestVisible="False">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -257,7 +257,7 @@
                                     </Border.RenderTransform>
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                                            <Setter Property="Background" Value="{DynamicResource PanelCardBrush}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter Property="Background" Value="#3DFFFFFF"/>
@@ -270,12 +270,12 @@
                                                HorizontalAlignment="Center"
                                                RenderOptions.BitmapScalingMode="HighQuality"/>
                                         <TextBlock Text="{Binding Name}" FontSize="11"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   Foreground="{DynamicResource PanelTextBrush}"
                                                    TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                                    MaxHeight="26" TextAlignment="Center"
                                                    HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                         <TextBlock Text="{Binding OwnerGroup.Name}" FontSize="9"
-                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Foreground="{DynamicResource PanelTextSecondaryBrush}"
                                                    TextTrimming="CharacterEllipsis"
                                                    TextAlignment="Center"
                                                    HorizontalAlignment="Center" Margin="0,1,0,0"/>

@@ -78,25 +78,16 @@ public partial class PanelWindow : Window
 
         SourceInitialized += (_, _) =>
         {
-            var invisible = Theme.NearInvisible;
-
             // v1.2：分层窗口不碰 DWM 属性（CAPTION/BORDER/CORNER 会留下可见色块"雾膜"）
+            // v1.29：面板有独立底板，任何模式都保留柔和阴影，把面板从壁纸里衬出来
             if (_transparent)
             {
-                if (invisible)
+                RootBorder.Effect = new DropShadowEffect
                 {
-                    RootBorder.BorderThickness = new Thickness(0);
-                }
-                else
-                {
-                    // 透明模式：柔和阴影把图标从壁纸中衬出来
-                    RootBorder.Effect = new DropShadowEffect
-                    {
-                        BlurRadius = 28,
-                        ShadowDepth = 0,
-                        Opacity = 0.5,
-                    };
-                }
+                    BlurRadius = 28,
+                    ShadowDepth = 0,
+                    Opacity = 0.5,
+                };
                 return;
             }
 
@@ -604,7 +595,7 @@ public partial class PanelWindow : Window
     }
 
     private void Root_DragLeave(object sender, DragEventArgs e)
-        => RootBorder.BorderBrush = (Brush)FindResource("HairlineBrush");
+        => RootBorder.BorderBrush = (Brush)FindResource("PanelHairlineBrush");
 
     private void Root_Drop(object sender, DragEventArgs e)
     {
