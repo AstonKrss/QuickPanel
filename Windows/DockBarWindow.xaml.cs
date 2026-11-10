@@ -197,7 +197,12 @@ public partial class DockBarWindow : Window
 
         // v1.6：顶部余量用 Grid 行高承载（SizeToContent 会忽略 Border.Margin，导致窗口不增高）
         // 溢出 = 44·s·0.32/2 + 8·s ≈ 15·s（s=图标缩放），+12 兜底 DPI 取整
-        var headroom = Math.Max(20, 15.04 * scale + 12);
+        // v1.12：headroom 按实际图钉尺寸 + 悬停倍数 + 上浮距离计算
+        var pinSize = Math.Clamp(settings.PinSize, 24, 64);
+        var hoverScale = Math.Clamp(settings.HoverScale, 1.0, 1.8);
+        var hoverLift = Math.Clamp(settings.HoverLift, 0, 20);
+        var overflow = pinSize * (hoverScale - 1) / 2 + hoverLift; // 放大溢出 + 上浮
+        var headroom = Math.Max(20, overflow * scale + 12);
         HeadroomRow.Height = new GridLength(Math.Round(headroom));
         InvalidateMeasure();
         UpdateLayout();
@@ -307,11 +312,31 @@ public partial class DockBarWindow : Window
     private void RebuildPinVisuals()
     {
         _pinBorders.Clear();
+        var s = _vm.Store.Config.Settings;
+        var pinSize = Math.Clamp(s.PinSize, 24, 64);
+        var spacing = Math.Clamp(s.PinSpacing, 0, 16);
+        var radius = Math.Clamp(s.PinCornerRadius, 0, 22);
+
         for (var i = 0; i < PinHost.Items.Count; i++)
         {
             if (PinHost.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement container) continue;
             if (FindDescendant<Border>(container) is not { } border) continue;
+
+            // v1.12：应用样式细调
+            border.Width = pinSize;
+            border.Height = pinSize;
+            border.CornerRadius = new CornerRadius(radius);
+            border.Margin = new Thickness(spacing / 2, 0, spacing / 2, 0);
             border.Background = Brushes.Transparent; // 底板统一由 Enter/Leave 控制
+
+            // 图标按比例缩放（图钉尺寸的 73%）
+            if (FindDescendant<Image>(border) is { } img)
+            {
+                var iconSize = Math.Round(pinSize * 0.73);
+                img.Width = iconSize;
+                img.Height = iconSize;
+            }
+
             if (container is UIElement ui)
                 _pinBorders.Add((border, ui));
         }
@@ -475,7 +500,10 @@ public partial class DockBarWindow : Window
         var entry = _pinBorders.FirstOrDefault(p => ReferenceEquals(p.Border, border));
         if (entry.Container != null)
             Panel.SetZIndex(entry.Container, 100);
-        AnimatePin(border, 1.32, -8);
+        // v1.12：悬停倍数/上浮距离可配置
+        var hs = Math.Clamp(_vm.Store.Config.Settings.HoverScale, 1.0, 1.8);
+        var hl = Math.Clamp(_vm.Store.Config.Settings.HoverLift, 0, 20);
+        AnimatePin(border, hs, -hl);
 
     }
 
@@ -526,8 +554,15 @@ public partial class DockBarWindow : Window
     private void Pin_Down(object sender, MouseButtonEventArgs e)
     {
         if (sender is Border border && e.LeftButton == MouseButtonState.Pressed)
+        {
             _pinDragAnchors[border] = e.GetPosition(border);
+            _dragStartScreen = PointToScreen(e.GetPosition(this));
+        }
     }
+
+    /// <summary>v1.12：拖拽起点（屏幕坐标），用于判断是内部排序还是拖出到桌面。</summary>
+    private Point _dragStartScreen;
+    private bool _reordering;
 
     private void Pin_MouseMove(object sender, MouseEventArgs e)
     {
@@ -535,6 +570,7 @@ public partial class DockBarWindow : Window
         if (e.LeftButton != MouseButtonState.Pressed)
         {
             _pinDragAnchors.Remove(border);
+            _reordering = false;
             return;
         }
 
@@ -542,9 +578,53 @@ public partial class DockBarWindow : Window
         if (Math.Abs(pos.X - anchor.X) + Math.Abs(pos.Y - anchor.Y)
             < SystemParameters.MinimumHorizontalDragDistance) return;
 
-        _pinDragAnchors.Remove(border);
         if (border.Tag is not ItemVM item) return;
-        StartFileDrag(border, item.Model.Target);
+
+        // v1.12：先进入内部排序模式；拖出 Dock 垂直范围才转为拖到桌面
+        _reordering = true;
+        var screen = PointToScreen(e.GetPosition(this));
+        var dockRect = GetScreenRect();
+        var outsideVertically = screen.Y < dockRect.Top - 24 || screen.Y > dockRect.Bottom + 24;
+
+        if (outsideVertically)
+        {
+            // 拖出 Dock → 走 OLE 拖到桌面
+            _pinDragAnchors.Remove(border);
+            _reordering = false;
+            StartFileDrag(border, item.Model.Target);
+            return;
+        }
+
+        // 内部排序：按光标 X 计算目标索引
+        ReorderPinToCursor(item, screen.X);
+    }
+
+    /// <summary>v1.12：把图钉移动到光标所在的槽位。</summary>
+    private void ReorderPinToCursor(ItemVM dragged, double screenX)
+    {
+        try
+        {
+            var target = -1;
+            for (var i = 0; i < PinHost.Items.Count; i++)
+            {
+                if (PinHost.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement c) continue;
+                if (FindDescendant<Border>(c) is not { } b) continue;
+                var origin = b.PointToScreen(new Point(0, 0));
+                if (screenX >= origin.X && screenX <= origin.X + b.ActualWidth)
+                {
+                    target = i;
+                    break;
+                }
+            }
+            if (target < 0) return;
+
+            var from = _vm.DockPins.IndexOf(dragged);
+            if (from < 0 || from == target) return;
+
+            _vm.DockPins.Move(from, target);
+            _vm.SaveConfig();
+        }
+        catch { /* 排序失败忽略 */ }
     }
 
     private void StartFileDrag(FrameworkElement source, string target)
@@ -675,6 +755,21 @@ public partial class DockBarWindow : Window
                 _vm.AddGroup(name);
         };
         menu.Items.Add(newGroup);
+
+        // v1.12：Dock 上直接添加钉选（不用先去桌面拖）
+        var addPin = new MenuItem { Header = "添加应用/文件到 Dock…" };
+        addPin.Click += (_, _) =>
+        {
+            var light = string.Equals(_vm.Store.Config.Settings.SettingsTheme, "light", StringComparison.OrdinalIgnoreCase);
+            var r = AddItemDialog.Show(this, light);
+            if (r is { } item)
+            {
+                if (!_vm.PinToDock(new[] { item.Target }))
+                    MessageBox.Show("该目标已在 Dock 中。", "QuickPanel",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        };
+        menu.Items.Add(addPin);
 
         var settings = new MenuItem { Header = "设置…" };
         settings.Click += (_, _) => _openSettings();

@@ -42,6 +42,22 @@ public class AppSettings
     /// <summary>v1.10：组件（时钟/监控）字体缩放 0.7–1.6，独立于 Dock 图标缩放。</summary>
     public double WidgetScale { get; set; } = 1.0;
 
+    // v1.12 Dock 样式细调
+    /// <summary>图钉图标尺寸（px，24–64）。</summary>
+    public double PinSize { get; set; } = 44;
+
+    /// <summary>图钉间距（px，0–16）。</summary>
+    public double PinSpacing { get; set; } = 6;
+
+    /// <summary>图钉圆角（px，0–22）。</summary>
+    public double PinCornerRadius { get; set; } = 12;
+
+    /// <summary>悬停放大倍数（1.0–1.8）。</summary>
+    public double HoverScale { get; set; } = 1.32;
+
+    /// <summary>悬停上浮距离（px，0–20）。</summary>
+    public double HoverLift { get; set; } = 8;
+
     /// <summary>v0.8：设置窗口主题 dark / light。</summary>
     public string SettingsTheme { get; set; } = "dark";
 

@@ -67,6 +67,17 @@ public partial class SettingsWindow : Window
         ShowMonitorCheck.IsChecked = settings.ShowSystemMonitor;
         WidgetScaleSlider.Value = Math.Clamp(settings.WidgetScale, 0.7, 1.6);
         WidgetScaleText.Text = $"{Math.Clamp(settings.WidgetScale, 0.7, 1.6) * 100:0}%";
+        // v1.12：样式细调初值
+        PinSizeSlider.Value = Math.Clamp(settings.PinSize, 24, 64);
+        PinSizeText.Text = $"{PinSizeSlider.Value:0}";
+        PinSpacingSlider.Value = Math.Clamp(settings.PinSpacing, 0, 16);
+        PinSpacingText.Text = $"{PinSpacingSlider.Value:0}";
+        PinRadiusSlider.Value = Math.Clamp(settings.PinCornerRadius, 0, 22);
+        PinRadiusText.Text = $"{PinRadiusSlider.Value:0}";
+        HoverScaleSlider.Value = Math.Clamp(settings.HoverScale, 1.0, 1.8);
+        HoverScaleText.Text = $"{HoverScaleSlider.Value:0.00}x";
+        HoverLiftSlider.Value = Math.Clamp(settings.HoverLift, 0, 20);
+        HoverLiftText.Text = $"{HoverLiftSlider.Value:0}";
         DockTextColorBox.Text = settings.DockTextColor;
         DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
         IconScaleSlider.Value = Math.Clamp(settings.IconScale, 0.6, 1.6);
@@ -157,6 +168,46 @@ public partial class SettingsWindow : Window
             WidgetScaleText.Text = $"{scale * 100:0}%";
             settings.WidgetScale = Math.Clamp(scale, 0.7, 1.6);
             _layoutChanged();
+        };
+
+        // v1.12：Dock 样式细调
+        PinSizeSlider.ValueChanged += (_, _) =>
+        {
+            if (_initializing) return;
+            var v = Math.Round(PinSizeSlider.Value);
+            PinSizeText.Text = $"{v:0}";
+            settings.PinSize = Math.Clamp(v, 24, 64);
+            _layoutChanged();
+        };
+        PinSpacingSlider.ValueChanged += (_, _) =>
+        {
+            if (_initializing) return;
+            var v = Math.Round(PinSpacingSlider.Value);
+            PinSpacingText.Text = $"{v:0}";
+            settings.PinSpacing = Math.Clamp(v, 0, 16);
+            _layoutChanged();
+        };
+        PinRadiusSlider.ValueChanged += (_, _) =>
+        {
+            if (_initializing) return;
+            var v = Math.Round(PinRadiusSlider.Value);
+            PinRadiusText.Text = $"{v:0}";
+            settings.PinCornerRadius = Math.Clamp(v, 0, 22);
+            _layoutChanged();
+        };
+        HoverScaleSlider.ValueChanged += (_, _) =>
+        {
+            if (_initializing) return;
+            var v = Math.Round(HoverScaleSlider.Value, 2);
+            HoverScaleText.Text = $"{v:0.00}x";
+            settings.HoverScale = Math.Clamp(v, 1.0, 1.8);
+        };
+        HoverLiftSlider.ValueChanged += (_, _) =>
+        {
+            if (_initializing) return;
+            var v = Math.Round(HoverLiftSlider.Value);
+            HoverLiftText.Text = $"{v:0}";
+            settings.HoverLift = Math.Clamp(v, 0, 20);
         };
 
         HideDelaySlider.ValueChanged += (_, _) =>

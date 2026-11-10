@@ -231,9 +231,11 @@ public class MainViewModel : INotifyPropertyChanged
 
     // ---------- Dock（F22 + v0.6 固定/取消）----------
 
-    public void PinToDock(IEnumerable<string> paths)
+    /// <summary>钉选到 Dock。返回是否有新增（v1.12：供 UI 判断重复/上限）。</summary>
+    public bool PinToDock(IEnumerable<string> paths)
     {
         const int maxPins = 14;
+        var added = false;
         foreach (var path in paths)
         {
             var item = ShortcutParser.Parse(path);
@@ -247,8 +249,10 @@ public class MainViewModel : INotifyPropertyChanged
                 break;
             }
             DockPins.Add(new ItemVM(item, Icons));
+            added = true;
         }
-        SaveConfig();
+        if (added) SaveConfig();
+        return added;
     }
 
     public void Unpin(ItemVM item)

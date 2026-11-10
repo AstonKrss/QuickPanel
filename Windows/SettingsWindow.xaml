@@ -324,6 +324,72 @@
                                    Foreground="{DynamicResource SbText}"/>
                     </Grid>
 
+                    <!-- v1.12：样式细调 -->
+                    <TextBlock Text="图钉大小" Margin="0,16,0,0"/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="PinSizeSlider" Minimum="24" Maximum="64"
+                                Value="44" TickFrequency="2" IsMoveToPointEnabled="True"/>
+                        <TextBlock x:Name="PinSizeText" Grid.Column="1" Text="44"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource SbText}"/>
+                    </Grid>
+
+                    <TextBlock Text="图钉间距" Margin="0,12,0,0"/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="PinSpacingSlider" Minimum="0" Maximum="16"
+                                Value="6" TickFrequency="1" IsMoveToPointEnabled="True"/>
+                        <TextBlock x:Name="PinSpacingText" Grid.Column="1" Text="6"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource SbText}"/>
+                    </Grid>
+
+                    <TextBlock Text="图钉圆角" Margin="0,12,0,0"/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="PinRadiusSlider" Minimum="0" Maximum="22"
+                                Value="12" TickFrequency="1" IsMoveToPointEnabled="True"/>
+                        <TextBlock x:Name="PinRadiusText" Grid.Column="1" Text="12"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource SbText}"/>
+                    </Grid>
+
+                    <TextBlock Text="悬停放大倍数" Margin="0,12,0,0"/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="HoverScaleSlider" Minimum="1.0" Maximum="1.8"
+                                Value="1.32" TickFrequency="0.02" IsMoveToPointEnabled="True"/>
+                        <TextBlock x:Name="HoverScaleText" Grid.Column="1" Text="1.32x"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource SbText}"/>
+                    </Grid>
+
+                    <TextBlock Text="悬停上浮距离" Margin="0,12,0,0"/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="HoverLiftSlider" Minimum="0" Maximum="20"
+                                Value="8" TickFrequency="1" IsMoveToPointEnabled="True"/>
+                        <TextBlock x:Name="HoverLiftText" Grid.Column="1" Text="8"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource SbText}"/>
+                    </Grid>
+
                     <!-- v1.9：组件 -->
                     <TextBlock Text="组件" Margin="0,18,0,0" FontWeight="SemiBold"/>
                     <CheckBox x:Name="ShowClockCheck" Content="显示时钟与日期" Margin="0,8,0,0"
