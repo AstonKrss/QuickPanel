@@ -17,6 +17,9 @@ public class ScannedApp
 
     /// <summary>默认是否勾选：只勾"明确命中"的，兜底项默认不勾，避免一次导入上百个系统工具。</summary>
     public bool IsSelected { get; set; }
+
+    /// <summary>v1.25：图标缓存（避免每次重绘都从磁盘解码 PNG）。</summary>
+    public System.Windows.Media.ImageSource? Icon { get; set; }
 }
 
 /// <summary>
