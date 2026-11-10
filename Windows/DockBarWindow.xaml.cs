@@ -458,6 +458,29 @@ public partial class DockBarWindow : Window
         return null;
     }
 
+    /// <summary>v1.20：取指定分组按钮在屏幕上的左边缘 X（DIP）；找不到返回 null。</summary>
+    public double? GetGroupButtonScreenX(GroupVM? group)
+    {
+        if (group is null) return null;
+        try
+        {
+            for (var i = 0; i < GroupButtons.Items.Count; i++)
+            {
+                if (!ReferenceEquals(GroupButtons.Items[i], group)) continue;
+                if (GroupButtons.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement c) continue;
+                if (FindDescendant<Border>(c) is not { } b) continue;
+
+                // 用本窗口的 DPI 把物理像素换算成 DIP
+                var origin = b.PointToScreen(new Point(0, 0));
+                var src = PresentationSource.FromVisual(this);
+                var toDip = src?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+                return toDip.Transform(origin).X;
+            }
+        }
+        catch { /* 忽略 */ }
+        return null;
+    }
+
     // ---------- F21：悬停分组按钮热切换 ----------
 
     private GroupVM? FindGroupAt(Point pt)

@@ -103,6 +103,24 @@ public partial class App : Application
         _hotzone.Start();
         _guard.StartActivateListener(() => Dispatcher.Invoke(ShowPanel));
 
+        // v1.20：预热面板 —— 启动时以 0 透明度显示一次再隐藏，
+        // 让 WPF 提前完成首次布局/渲染/字体加载，消除第一次唤出的明显延迟。
+        // 注意：直接 Show/Hide，不走 ShowPanel 的动画逻辑，避免与 Opacity 动画冲突。
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+        {
+            try
+            {
+                if (_panel is null) return;
+                var original = _panel.Opacity;
+                _panel.Opacity = 0;
+                _panel.Show();
+                _panel.UpdateLayout();   // 强制完成一轮布局+渲染
+                _panel.Hide();
+                _panel.Opacity = original;
+            }
+            catch { /* 预热失败不影响正常使用 */ }
+        }));
+
         // F42 v0.5：首次运行自动打开初始化引导
         if (_store.FirstRun)
             Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(OpenSettings));

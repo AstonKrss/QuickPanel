@@ -229,7 +229,16 @@ public partial class PanelWindow : Window
         }
 
         var wa = ScreenHelper.GetWorkAreaForWindow(dock);
-        var left = dock.Left + (dock.ActualWidth - Width) / 2;
+
+        // v1.20：面板左边缘对齐"当前选中分组按钮"的 x，而不是整条 Dock 居中。
+        // 这样悬停「网安」（Dock 最左侧）时，面板不会跑到很右边，用户的手不用长距离移动。
+        var anchorX = dock.GetGroupButtonScreenX(_vm.SelectedGroup);
+        double left;
+        if (anchorX.HasValue)
+            left = anchorX.Value;          // 分组按钮左边缘对齐面板左边缘
+        else
+            left = dock.Left + (dock.ActualWidth - Width) / 2;  // 回退：居中
+
         double top;
         if (dock.Top < wa.Top + wa.Height / 2)
             top = dock.Top + dock.ActualHeight + 8;  // Dock 在上半屏 → 面板放下方

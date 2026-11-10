@@ -5,7 +5,7 @@ public class AppSettings
 {
     public string Hotkey { get; set; } = "Alt+Q";
     public string PanelEdge { get; set; } = "bottom";
-    public int HotZoneMs { get; set; } = 300;
+    public int HotZoneMs { get; set; } = 200;
     /// <summary>F35：全屏时自动隐藏 Dock 与面板。</summary>
     public bool DockAutoHide { get; set; } = true;
     public string Theme { get; set; } = "dark";

@@ -214,7 +214,7 @@
                                 </Grid.ColumnDefinitions>
                                 <Slider x:Name="HotZoneSlider" Minimum="100" Maximum="1000"
                                         TickFrequency="50" IsMoveToPointEnabled="True"/>
-                                <TextBlock x:Name="HotZoneText" Grid.Column="1" Text="300 ms"
+                                <TextBlock x:Name="HotZoneText" Grid.Column="1" Text="200 ms"
                                            VerticalAlignment="Center" HorizontalAlignment="Right"
                                            Foreground="{DynamicResource SbText}"/>
                             </Grid>

@@ -172,7 +172,13 @@ public class HotZoneService
 
             if (!panel.IsVisible) return;
 
-            var outside = !overDock && !InRect(cursor, panel.GetScreenRect());
+            // v1.20：把"面板与 Dock 之间的间隙"也算安全区 ——
+            // 否则从 Dock 移向面板的那一瞬间光标落在两者之间，面板会立刻消失。
+            var panelRect = panel.GetScreenRect();
+            var dockRectForBridge = dock.GetScreenRect();
+            var inBridge = IsInBridgeZone(cursor, dockRectForBridge, panelRect);
+
+            var outside = !overDock && !InRect(cursor, panelRect) && !inBridge;
 
             // v1.7：热键/托盘唤出时鼠标从未进入面板 —— 不能因为"鼠标在外面"就收回
             // （此前 Alt+Q 打开后 300ms 立即消失，用户根本来不及操作）
@@ -223,6 +229,40 @@ public class HotZoneService
             QUERY_USER_NOTIFICATION_STATE.QUNS_BUSY => RectCoversMonitor(hwnd),
             _ => false,
         };
+    }
+
+    /// <summary>
+    /// v1.20：Dock 与面板之间的过渡带。
+    /// 光标处于两者之间的垂直间隙、且水平落在合并范围内 → 视为"正在移动中"，不收回。
+    /// </summary>
+    private static bool IsInBridgeZone(Win32.POINT p, Win32.RECT dockRect, Win32.RECT panelRect)
+    {
+        try
+        {
+            int gapTop, gapBottom;
+            if (panelRect.Bottom <= dockRect.Top)          // 面板在上方
+            {
+                gapTop = panelRect.Bottom;
+                gapBottom = dockRect.Top;
+            }
+            else if (dockRect.Bottom <= panelRect.Top)      // 面板在下方
+            {
+                gapTop = dockRect.Bottom;
+                gapBottom = panelRect.Top;
+            }
+            else return false;
+
+            if (gapBottom - gapTop > 40) return false;
+            if (p.Y < gapTop - 2 || p.Y > gapBottom + 2) return false;
+
+            var left = Math.Min(dockRect.Left, panelRect.Left);
+            var right = Math.Max(dockRect.Right, panelRect.Right);
+            return p.X >= left && p.X <= right;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>v0.7：光标是否真实命中目标窗口（GA_ROOT 比对，屏蔽其他窗口覆盖）。</summary>
