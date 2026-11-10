@@ -385,6 +385,8 @@ public partial class PanelWindow : Window
     private void StartItemDrag(FrameworkElement source, ItemVM item)
     {
         _oleDragging = true;
+        var originalOpacity = source.Opacity;
+        DragGhost? ghost = null;
         try
         {
             var data = new DataObject();
@@ -393,10 +395,22 @@ public partial class PanelWindow : Window
             if (File.Exists(target) || Directory.Exists(target))
                 data.SetData(DataFormats.FileDrop, new[] { target });
 
+            // v1.19：拖拽幽灵 + 源图标淡出
+            try
+            {
+                ghost = new DragGhost(item.Icon, item.Name, 52);
+                source.Opacity = 0.35;
+                if (source is Border b)
+                    AnimateItemScale(b, 1.0, TimeSpan.FromMilliseconds(100));
+            }
+            catch { /* ghost 失败不影响拖拽 */ }
+
             DragDrop.DoDragDrop(source, data, DragDropEffects.Copy | DragDropEffects.Move);
         }
         finally
         {
+            ghost?.Dispose();
+            source.Opacity = originalOpacity;
             _oleDragging = false;
         }
     }

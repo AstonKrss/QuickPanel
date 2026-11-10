@@ -641,7 +641,28 @@ public partial class DockBarWindow : Window
                           ?? _vm.Groups.FirstOrDefault(g => g.Items.Any(i =>
                               string.Equals(i.Model.Target, item.Model.Target, StringComparison.OrdinalIgnoreCase)));
 
-        var result = DragDrop.DoDragDrop(border, data, DragDropEffects.Move);
+        // v1.19：显示跟随光标的半透明图标 + 源图标淡出
+        DragGhost? ghost = null;
+        var originalOpacity = border.Opacity;
+        try
+        {
+            var pinSize = Math.Clamp(_vm.Store.Config.Settings.PinSize, 24, 64);
+            ghost = new DragGhost(item.Icon, item.Name, pinSize * 1.15);
+            border.Opacity = 0.35;   // 源图标淡出，暗示"正在移动"
+            AnimatePin(border, 1.0, 0);
+        }
+        catch { /* ghost 失败不影响拖拽 */ }
+
+        DragDropEffects result;
+        try
+        {
+            result = DragDrop.DoDragDrop(border, data, DragDropEffects.Move);
+        }
+        finally
+        {
+            ghost?.Dispose();
+            border.Opacity = originalOpacity;
+        }
 
         // 未被任何目标接受 + 光标已离开 Dock → 取消钉选（条目仍在原分组中）
         if (result == DragDropEffects.None)
