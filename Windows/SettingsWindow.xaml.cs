@@ -66,8 +66,8 @@ public partial class SettingsWindow : Window
         SurfaceColorBox.Text = settings.SurfaceColor;
         AccentColorBox.Text = settings.AccentColor;
         PanelSurfaceColorBox.Text = settings.PanelSurfaceColor;
-        PanelOpacitySlider.Value = Math.Clamp(settings.PanelOpacity, 0.12, 1.0);
-        PanelOpacityText.Text = $"{Math.Clamp(settings.PanelOpacity, 0.12, 1.0) * 100:0}%";
+        PanelOpacitySlider.Value = Math.Clamp(settings.PanelOpacity, 0.05, 1.0);
+        PanelOpacityText.Text = $"{Math.Clamp(settings.PanelOpacity, 0.05, 1.0) * 100:0}%";
         OpacitySlider.Value = settings.Opacity;
         OpacityValueText.Text = $"{Math.Round(settings.Opacity, 2) * 100:0}%";
         PosCenterRadio.IsChecked = settings.DockPositionMode != "free";
@@ -91,6 +91,7 @@ public partial class SettingsWindow : Window
         HoverScaleText.Text = $"{HoverScaleSlider.Value:0.00}x";
         HoverLiftSlider.Value = Math.Clamp(settings.HoverLift, 0, 20);
         HoverLiftText.Text = $"{HoverLiftSlider.Value:0}";
+        HideDesktopIconsCheck.IsChecked = DesktopIcons.IsHidden();
         DockTextColorBox.Text = settings.DockTextColor;
         DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
         DockAlwaysVisibleCheck.IsChecked = settings.DockAlwaysVisible;
@@ -362,6 +363,22 @@ public partial class SettingsWindow : Window
         _vm.Store.Config.Settings.DockDesktopOnly = DockDesktopOnlyCheck.IsChecked == true;
     }
 
+    /// <summary>v1.30：桌面留白。只切 Explorer 的显示开关，不动文件。</summary>
+    private void HideDesktopIcons_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        var want = HideDesktopIconsCheck.IsChecked == true;
+        if (!DesktopIcons.SetHidden(want))
+        {
+            MessageBox.Show("切换桌面图标失败：找不到桌面窗口（Explorer 可能未运行）。",
+                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            HideDesktopIconsCheck.IsChecked = DesktopIcons.IsHidden();
+            return;
+        }
+        _vm.Store.Config.Settings.DesktopIconsHidden = want;
+        _vm.SaveConfig();
+    }
+
     // ---------- 分区导航（v0.9）----------
 
     private void Nav_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -392,6 +409,7 @@ public partial class SettingsWindow : Window
         ScrollGeneral?.ScrollToTop();
         ScrollAppearance?.ScrollToTop();
         ScrollDock?.ScrollToTop();
+        ScrollPanel?.ScrollToTop();
     }
 
     // ---------- 设置主题（v0.8）----------
@@ -500,7 +518,7 @@ public partial class SettingsWindow : Window
         SurfaceColorBox.Text = settings.SurfaceColor;
         AccentColorBox.Text = settings.AccentColor;
         PanelSurfaceColorBox.Text = settings.PanelSurfaceColor;
-        PanelOpacitySlider.Value = Math.Clamp(settings.PanelOpacity, 0.12, 1.0);
+        PanelOpacitySlider.Value = Math.Clamp(settings.PanelOpacity, 0.05, 1.0);
         PanelOpacityText.Text = $"{PanelOpacitySlider.Value * 100:0}%";
         IconScaleSlider.Value = 1.0;
         WidgetScaleSlider.Value = 1.0;

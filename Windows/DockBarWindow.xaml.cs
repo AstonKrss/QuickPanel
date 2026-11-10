@@ -99,7 +99,40 @@ public partial class DockBarWindow : Window
             }
 
             // Dock 一律不挂 DropShadowEffect —— Effect 的中间位图会以边界裁切内容（§6.3）
+
+            // v1.30：透明余量不能挡下层点击 —— 命中根 Border 本身时返回 HTTRANSPARENT，
+            // 让点击落到下面的窗口/桌面；胶囊、图钉、按钮照常接收。
+            var source = (HwndSource)PresentationSource.FromVisual(this);
+            source?.AddHook(WndProc);
         };
+    }
+
+    private const int WM_NCHITTEST = 0x0084;
+    private const int HTTRANSPARENT = -1;
+    private const int HTCLIENT = 1;
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg != WM_NCHITTEST) return IntPtr.Zero;
+
+        // lParam: 屏幕坐标（物理像素，低 16 位 X / 高 16 位 Y，有符号）
+        var sx = unchecked((short)(long)lParam);
+        var sy = unchecked((short)((long)lParam >> 16));
+        var pt = PointFromScreen(new Point(sx, sy));
+        var hit = InputHitTest(pt);
+        try
+        {
+            var name = hit is FrameworkElement fe ? fe.GetType().Name + "#" + (fe.Name ?? "") : (hit?.GetType().Name ?? "null");
+            System.IO.File.AppendAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "qp-hit.log"),
+                $"{sx},{sy} -> {pt.X:0},{pt.Y:0} hit={name} win={ActualWidth:0}x{ActualHeight:0}{Environment.NewLine}");
+        }
+        catch { }
+        if (hit is null || ReferenceEquals(hit, RootBorder))
+        {
+            handled = true;
+            return new IntPtr(HTTRANSPARENT);
+        }
+        return IntPtr.Zero;
     }
 
     private void OnPinsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -318,6 +351,7 @@ public partial class DockBarWindow : Window
         var wa = ScreenHelper.GetWorkAreaForWindow(this);
         Top = wa.Bottom - ActualHeight;
         Left = wa.Left + (wa.Width - ActualWidth) / 2;
+
     }
 
     private void RebuildPinVisuals()
@@ -597,11 +631,8 @@ public partial class DockBarWindow : Window
     private void StartFreeDrag()
     {
         var settings = _vm.Store.Config.Settings;
-        if (settings.DockPositionMode != "free")
-        {
-            settings.DockPositionMode = "free";
-            _vm.SaveConfig();
-        }
+        var startLeft = Left;
+        var startTop = Top;
         try
         {
             DragMove();
@@ -609,6 +640,16 @@ public partial class DockBarWindow : Window
         catch
         {
             return; // 非左键按下状态调用会抛出
+        }
+
+        // v1.30：只有真的拖动过才切成"自由拖动"并保存 ——
+        // 以前单击空白衬垫也会静默改模式，之后窗口不再回到屏幕底部。
+        var moved = Math.Abs(Left - startLeft) > 0.5 || Math.Abs(Top - startTop) > 0.5;
+        if (!moved) return;
+
+        if (settings.DockPositionMode != "free")
+        {
+            settings.DockPositionMode = "free";
         }
         settings.DockX = Left;
         settings.DockY = Top;

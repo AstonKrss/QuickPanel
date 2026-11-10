@@ -207,6 +207,13 @@
                             <TextBox x:Name="HotkeyBox" Height="34" VerticalContentAlignment="Center" Margin="0,6,0,0"/>
                             <CheckBox x:Name="AutostartCheck" Content="开机自启（写入 HKCU Run 键）" Margin="0,14,0,0"/>
                             <CheckBox x:Name="FullscreenHideCheck" Content="全屏时自动隐藏 Dock 与面板（游戏 / F11）" Margin="0,8,0,0"/>
+
+                            <!-- v1.30：桌面留白 -->
+                            <TextBlock Text="桌面" Margin="0,18,0,0" FontWeight="SemiBold"/>
+                            <CheckBox x:Name="HideDesktopIconsCheck" Content="隐藏桌面图标（桌面留白，只留壁纸）"
+                                      Margin="0,8,0,0" Click="HideDesktopIcons_Changed"/>
+                            <TextBlock Text="快捷方式不会被删除，仍在桌面文件夹里；从面板、Dock 或资源管理器都能打开。隐藏期间桌面右键不可用，托盘菜单/这里可随时恢复；退出 QuickPanel 会自动恢复。"
+                                       Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
                             <TextBlock Text="鼠标热区唤出延迟" Margin="0,16,0,0"/>
                             <Grid Margin="0,6,0,0">
                                 <Grid.ColumnDefinitions>
@@ -265,36 +272,9 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- v1.29：面板独立底板（跟 Dock 分开，Dock 调透明不会把面板一起拖没） -->
-                            <TextBlock Text="面板底色 #RRGGBB" Margin="0,16,0,0"/>
-                            <Grid Margin="0,6,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="PanelSurfaceColorBox" Height="30" VerticalContentAlignment="Center"/>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
-                                    <Button Style="{StaticResource SwatchButton}" Background="#151518" Tag="panelsurface|#151518" Click="Swatch_Click" ToolTip="近黑"/>
-                                    <Button Style="{StaticResource SwatchButton}" Background="#20242E" Tag="panelsurface|#20242E" Click="Swatch_Click" ToolTip="蓝灰"/>
-                                    <Button Style="{StaticResource SwatchButton}" Background="#2A2A2A" Tag="panelsurface|#2A2A2A" Click="Swatch_Click" ToolTip="深灰"/>
-                                    <Button Style="{StaticResource SwatchButton}" Background="#F2F3F7" Tag="panelsurface|#F2F3F7" Click="Swatch_Click" ToolTip="浅色"/>
-                                    <Button Style="{StaticResource SwatchButton}" Background="#1B2A3A" Tag="panelsurface|#1B2A3A" Click="Swatch_Click" ToolTip="深蓝"/>
-                                </StackPanel>
-                            </Grid>
-                            <TextBlock Text="面板不透明度" Margin="0,14,0,0"/>
-                            <Grid Margin="0,6,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition Width="48"/>
-                                </Grid.ColumnDefinitions>
-                                <Slider x:Name="PanelOpacitySlider" Minimum="0.12" Maximum="1.0"
-                                        Value="0.94" TickFrequency="0.01" IsMoveToPointEnabled="True"/>
-                                <TextBlock x:Name="PanelOpacityText" Grid.Column="1"
-                                           Text="94%" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource SbText}"/>
-                            </Grid>
-                            <TextBlock Text="面板是主界面，建议 80% 以上；喜欢贴壁纸可以调低，文字会自动反色。"
-                                       Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
+                            <TextBlock Text="面板的底色与不透明度在左侧「面板」页调整。"
+                                       Margin="0,14,0,0" TextWrapping="Wrap" FontSize="11"
+                                       Foreground="{DynamicResource SbText}"/>
 
                             <TextBlock Text="整体不透明度（Dock + 面板，含图标和文字）" Margin="0,16,0,0"/>
                             <Grid Margin="0,6,0,0">
@@ -462,8 +442,40 @@
                 <!-- ── 面板 ── -->
                 <Grid x:Name="SecPanel" Visibility="Collapsed">
                     <Border Style="{StaticResource Card}">
+                        <ScrollViewer x:Name="ScrollPanel" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-                            <TextBlock Text="面板缩放（含搜索框，实时生效）"/>
+                                <!-- v1.29：面板独立底板（跟 Dock 分开，Dock 调透明不会把面板一起拖没） -->
+                                <TextBlock Text="面板底色 #RRGGBB" Margin="0,16,0,0"/>
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="PanelSurfaceColorBox" Height="30" VerticalContentAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <Button Style="{StaticResource SwatchButton}" Background="#151518" Tag="panelsurface|#151518" Click="Swatch_Click" ToolTip="近黑"/>
+                                        <Button Style="{StaticResource SwatchButton}" Background="#20242E" Tag="panelsurface|#20242E" Click="Swatch_Click" ToolTip="蓝灰"/>
+                                        <Button Style="{StaticResource SwatchButton}" Background="#2A2A2A" Tag="panelsurface|#2A2A2A" Click="Swatch_Click" ToolTip="深灰"/>
+                                        <Button Style="{StaticResource SwatchButton}" Background="#F2F3F7" Tag="panelsurface|#F2F3F7" Click="Swatch_Click" ToolTip="浅色"/>
+                                        <Button Style="{StaticResource SwatchButton}" Background="#1B2A3A" Tag="panelsurface|#1B2A3A" Click="Swatch_Click" ToolTip="深蓝"/>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="面板不透明度" Margin="0,14,0,0"/>
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="48"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="PanelOpacitySlider" Minimum="0.05" Maximum="1.0"
+                                            Value="0.94" TickFrequency="0.01" IsMoveToPointEnabled="True"/>
+                                    <TextBlock x:Name="PanelOpacityText" Grid.Column="1"
+                                               Text="94%" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource SbText}"/>
+                                </Grid>
+                                <TextBlock Text="面板是主界面，建议 80% 以上；喜欢贴壁纸可以调低，文字会自动反色。"
+                                           Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
+
+                            <TextBlock Text="面板缩放（含搜索框，实时生效）" Margin="0,18,0,0"/>
                             <Grid Margin="0,6,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition/>
@@ -494,6 +506,7 @@
                             <TextBlock Text="开启后：鼠标移开不会收、点击其他窗口不会收，面板一直留在屏幕上。"
                                        Margin="0,6,0,0" TextWrapping="Wrap" FontSize="11"/>
                         </StackPanel>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
 

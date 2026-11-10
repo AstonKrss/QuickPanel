@@ -106,6 +106,13 @@ public partial class App : Application
         _hotzone.Start();
         _guard.StartActivateListener(() => Dispatcher.Invoke(ShowPanel));
 
+        // v1.30：上次选了"桌面留白"就恢复（只在开启时强制隐藏，不与系统自身设置抢）
+        if (_store.Config.Settings.DesktopIconsHidden)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle,
+                new Action(() => DesktopIcons.SetHidden(true)));
+        }
+
         // v1.20：预热面板 —— 启动时以 0 透明度显示一次再隐藏，
         // 让 WPF 提前完成首次布局/渲染/字体加载，消除第一次唤出的明显延迟。
         // 注意：直接 Show/Hide，不走 ShowPanel 的动画逻辑，避免与 Opacity 动画冲突。
@@ -152,6 +159,15 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        // v1.30：退出时把桌面图标还回去 —— "桌面留白"只在 QuickPanel 运行时生效，
+        // 避免用户关掉程序后既看不到图标、又点不了桌面右键（DefView 被隐藏）。
+        try
+        {
+            if (_store?.Config.Settings.DesktopIconsHidden == true)
+                DesktopIcons.SetHidden(false);
+        }
+        catch { /* 退出期失败忽略 */ }
+
         _tray?.Dispose();
         _hotzone?.Stop();
         _hotkeys?.Dispose();
@@ -260,6 +276,21 @@ public partial class App : Application
         if (wasPanelVisible) _panel.ShowPanel();
     }
 
+    /// <summary>v1.30：桌面留白开关（托盘快速入口）。</summary>
+    private void ToggleDesktopIcons()
+    {
+        if (_store is null) return;
+        var target = !DesktopIcons.IsHidden();
+        if (!DesktopIcons.SetHidden(target))
+        {
+            MessageBox.Show("切换桌面图标失败：找不到桌面窗口（Explorer 可能未运行）。",
+                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        _store.Config.Settings.DesktopIconsHidden = target;
+        _vm?.SaveConfig();
+    }
+
     private void OpenSettings()
     {
         if (_settings != null)
@@ -310,6 +341,9 @@ public partial class App : Application
         }
 
         menu.Items.Add(new WinForms.ToolStripSeparator());
+        var desktopToggle = menu.Items.Add("隐藏桌面图标（桌面留白）", null, (_, _) => ToggleDesktopIcons());
+        menu.Opening += (_, _) =>
+            desktopToggle.Text = DesktopIcons.IsHidden() ? "显示桌面图标" : "隐藏桌面图标（桌面留白）";
         menu.Items.Add("备份配置", null, (_, _) =>
         {
             try

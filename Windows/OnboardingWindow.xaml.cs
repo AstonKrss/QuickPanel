@@ -61,6 +61,7 @@ public partial class OnboardingWindow : Window
         HotkeyBox.Text = vm.Store.Config.Settings.Hotkey;
         AutostartCheck.IsChecked = Autostart.IsEnabled();
         DockAlwaysCheck.IsChecked = vm.Store.Config.Settings.DockAlwaysVisible;
+        HideDesktopIconsCheck.IsChecked = vm.Store.Config.Settings.DesktopIconsHidden;
         BuildAccentPalette();
         BuildTextColorPalette();
         InitAppearanceSelection();
@@ -156,6 +157,15 @@ public partial class OnboardingWindow : Window
 
             // Dock 是否常驻
             _vm.Store.Config.Settings.DockAlwaysVisible = DockAlwaysCheck.IsChecked == true;
+
+            // v1.30：桌面留白（只切显示开关，不动桌面文件）
+            var hideIcons = HideDesktopIconsCheck.IsChecked == true;
+            if (hideIcons != DesktopIcons.IsHidden())
+            {
+                try { DesktopIcons.SetHidden(hideIcons); }
+                catch { /* 失败不阻塞流程 */ }
+            }
+            _vm.Store.Config.Settings.DesktopIconsHidden = hideIcons;
         }
 
         if (_step == 4) { Finish(); return; }

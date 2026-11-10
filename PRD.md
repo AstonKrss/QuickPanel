@@ -579,3 +579,23 @@ Dock 和面板共用一套底色会让"为了 Dock 全透明"把面板也拖到�
 
 - 内容比窗口高（Dock 页有图标大小/图钉/间距/圆角/悬停/组件），每个长页放在 `ScrollViewer` 里，切分区自动回到顶部
 - 混合 DPI 多屏下 WPF 的 `CenterScreen` 会算到屏幕外（实测 Left=-98），改为按鼠标所在显示器工作区手动居中
+
+### 20.5 桌面留白（v1.30）
+
+目标：初始化后可以让桌面只剩壁纸，程序全从面板/Dock 进；**不删任何快捷方式**。
+
+实现：只切 Explorer 桌面视图（`SHELLDLL_DefView`）的可见性，快捷方式仍在 `%USERPROFILE%\Desktop` 与公共桌面里，
+资源管理器照常可见可打开。实测 Win11 24H2：
+- 网上常见的 `WM_COMMAND 0x7402` 已失效（Progman / DefView / SysListView32 三个目标都不响应）
+- 隐藏 DefView 后壁纸仍在（之前看到黑屏是 Win+D 切换瞬间的 DWM 快照）
+- 隐藏期间桌面右键不可用（DefView 收不到鼠标），所以：托盘菜单与设置页都提供恢复入口；
+  退出 QuickPanel 时自动恢复，避免用户关掉程序后既看不到图标又点不了右键
+
+### 20.6 安装包（v1.30）
+
+| 包 | 大小 | 适用 |
+|---|---|---|
+| `QuickPanel-v1.30.0-win-x64.zip` / `dist/QuickPanel.exe` | 0.7 MB | 已装 .NET 8 桌面运行时 |
+| `QuickPanel-v1.30.0-standalone-win-x64/` | 67 MB | 任何 Win10/11 x64，无需运行时 |
+
+两者解压后都是双击「安装.bat」，装到 `%LOCALAPPDATA%\QuickPanel` 并建快捷方式、写卸载项。

@@ -22,3 +22,8 @@ _probe_img.ps1
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# 自包含单文件包（63MB，不进仓库；本地保留供拷贝到未装 .NET 的电脑）
+dist/QuickPanel-v*-standalone*/
+dist/_standalone/
+dist/_standalone2/

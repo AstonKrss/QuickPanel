@@ -266,6 +266,14 @@
                                 <TextBlock Text="关闭后，切到别的软件时 Dock 会自动隐藏，鼠标移到屏幕底部才出现。"
                                            Margin="0,5,0,0" FontSize="11.5" Foreground="#FF7C8290"
                                            TextWrapping="Wrap"/>
+
+                                <!-- v1.30：桌面留白 -->
+                                <CheckBox x:Name="HideDesktopIconsCheck" Content="桌面留白（隐藏桌面图标）"
+                                          Margin="0,16,0,0" FontSize="13"
+                                          Foreground="#FF2A2F3A" Cursor="Hand"/>
+                                <TextBlock Text="只隐藏壁纸上的图标，快捷方式仍在桌面文件夹里，之后从面板或 Dock 打开；随时可在设置或托盘里恢复。"
+                                           Margin="0,5,0,0" FontSize="11.5" Foreground="#FF7C8290"
+                                           TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
