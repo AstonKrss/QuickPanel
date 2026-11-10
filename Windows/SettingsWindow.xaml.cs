@@ -83,6 +83,8 @@ public partial class SettingsWindow : Window
         HoverLiftText.Text = $"{HoverLiftSlider.Value:0}";
         DockTextColorBox.Text = settings.DockTextColor;
         DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
+        DockAlwaysVisibleCheck.IsChecked = settings.DockAlwaysVisible;
+        UpdateDockOptionEnableState();
         IconScaleSlider.Value = Math.Clamp(settings.IconScale, 0.6, 1.6);
         IconScaleText.Text = $"{Math.Clamp(settings.IconScale, 0.6, 1.6) * 100:0}%";
         PanelScaleSlider.Value = Math.Clamp(settings.PanelScale, 0.8, 1.4);
@@ -392,6 +394,24 @@ public partial class SettingsWindow : Window
         if (_initializing) return;
         _vm.Store.Config.Settings.DockIconPlate = PlateRadio.IsChecked == true;
         _layoutChanged();
+    }
+
+    /// <summary>v1.22：Dock 常驻开关。</summary>
+    private void DockAlwaysVisible_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        _vm.Store.Config.Settings.DockAlwaysVisible = DockAlwaysVisibleCheck.IsChecked == true;
+        UpdateDockOptionEnableState();
+    }
+
+    /// <summary>常驻开启时，"仅桌面显示"和"全屏隐藏"失去意义，置灰。</summary>
+    private void UpdateDockOptionEnableState()
+    {
+        var always = DockAlwaysVisibleCheck.IsChecked == true;
+        DockDesktopOnlyCheck.IsEnabled = !always;
+        DockDesktopOnlyCheck.Opacity = always ? 0.4 : 1.0;
+        FullscreenHideCheck.IsEnabled = !always;
+        FullscreenHideCheck.Opacity = always ? 0.4 : 1.0;
     }
 
     /// <summary>v1.21：面板常驻开关。</summary>

@@ -17,8 +17,11 @@ public class AppSettings
     /// <summary>v0.8：鼠标离开面板+Dock 后自动收回延迟（ms）。</summary>
     public int PanelHideMs { get; set; } = 300;
 
-    /// <summary>v1.21：面板常驻 —— 打开后不自动收回，只在手动关闭（Alt+Q / Esc）时隐藏。</summary>
+    /// <summary>v1.21：面板常驻（默认关闭，面板正常自动收回）。</summary>
     public bool PanelStayOpen { get; set; }
+
+    /// <summary>v1.22：Dock 常驻 —— 永不自隐藏（覆盖"仅桌面显示"和"全屏隐藏"两项）。</summary>
+    public bool DockAlwaysVisible { get; set; }
 
     /// <summary>v0.8：Dock 图标底板。true=带底板（悬停高亮），false=纯图标无边框。</summary>
     public bool DockIconPlate { get; set; } = true;

@@ -74,7 +74,9 @@ public class HotZoneService
             if (panel is null || dock is null) return;
 
             // F35：前台全屏（D3D 独占/演示/软全屏）→ Dock+面板自动收起；退出全屏恢复 Dock
-            if (IsForegroundFullscreen() && FullscreenHideEnabled())
+            // v1.22：Dock 常驻时跳过这一整段（Dock 不隐藏，但仍允许面板收起）
+            var dockAlways = DockAlwaysVisible();
+            if (!dockAlways && IsForegroundFullscreen() && FullscreenHideEnabled())
             {
                 if (!_dockHidden && dock.IsVisible)
                 {
@@ -87,6 +89,13 @@ public class HotZoneService
                 return;
             }
 
+            // v1.22：常驻模式下若之前被全屏隐藏过，立即恢复
+            if (dockAlways && _dockHidden)
+            {
+                dock.RestoreFromFullscreen();
+                _dockHidden = false;
+            }
+
             if (_dockHidden)
             {
                 dock.RestoreFromFullscreen();
@@ -96,7 +105,8 @@ public class HotZoneService
             if (!Win32.GetCursorPos(out var cursor)) return;
 
             // v1.4：智能自动隐藏 —— 非桌面时隐藏 Dock；鼠标碰底部区域则浮现
-            if (DesktopOnly())
+            // v1.22：Dock 常驻时完全跳过（Dock 一直显示）
+            if (!dockAlways && DesktopOnly())
             {
                 var onDesktop = IsDesktopForeground();
                 if (!onDesktop)
@@ -240,6 +250,9 @@ public class HotZoneService
 
     /// <summary>v1.20：面板常驻 —— 为 true 时不做任何自动收回。</summary>
     public Func<bool> StayOpen { get; set; } = () => false;
+
+    /// <summary>v1.22：Dock 常驻 —— 为 true 时 Dock 永不自动隐藏（无视全屏隐藏与仅桌面显示）。</summary>
+    public Func<bool> DockAlwaysVisible { get; set; } = () => false;
 
     /// <summary>v1.20：Dock 与面板之间的过渡带。</summary>
     /// 光标处于两者之间的垂直间隙、且水平落在合并范围内 → 视为"正在移动中"，不收回。

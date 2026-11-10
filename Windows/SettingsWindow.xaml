@@ -311,6 +311,13 @@
                             </Grid>
                             <CheckBox x:Name="DockDesktopOnlyCheck" Content="仅在桌面显示（打开其他软件时自动隐藏）"
                                       Margin="0,16,0,0" Click="DockDesktopOnly_Changed"/>
+
+                            <!-- v1.22：Dock 常驻 -->
+                            <CheckBox x:Name="DockAlwaysVisibleCheck"
+                                      Content="Dock 常驻（永不自动隐藏）"
+                                      Margin="0,10,0,0" Click="DockAlwaysVisible_Changed"/>
+                            <TextBlock Text="开启后 Dock 一直显示：不受「仅桌面显示」「全屏隐藏」影响，始终停在屏幕上。"
+                                       Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
                     <TextBlock Text="图标大小" Margin="0,16,0,0"/>
                     <Grid Margin="0,6,0,0">
                         <Grid.ColumnDefinitions>

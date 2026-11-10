@@ -91,7 +91,8 @@ public partial class App : Application
             HotZoneMs = () => store!.Config.Settings.HotZoneMs,
             FullscreenHideEnabled = () => store!.Config.Settings.DockAutoHide, // F35 v0.6 开关
             HideDelayMs = () => store!.Config.Settings.PanelHideMs,            // F31 v0.8 收回延迟
-            StayOpen = () => store!.Config.Settings.PanelStayOpen,             // v1.21 常驻模式
+            StayOpen = () => store!.Config.Settings.PanelStayOpen,             // v1.21 面板常驻
+            DockAlwaysVisible = () => store!.Config.Settings.DockAlwaysVisible, // v1.22 Dock 常驻
             DesktopOnly = () => store!.Config.Settings.DockDesktopOnly,        // v1.4 仅桌面显示
         };
 
