@@ -242,6 +242,8 @@ public partial class DockBarWindow : Window
         DateText.Visibility = showClock ? Visibility.Visible : Visibility.Collapsed;
         MonitorPanel.Visibility = showMonitor ? Visibility.Visible : Visibility.Collapsed;
 
+        ApplyBareText(); // v1.11：组件文字颜色跟随自定义色
+
         if (!showClock && !showMonitor)
         {
             _widgetTimer?.Stop();
@@ -332,6 +334,19 @@ public partial class DockBarWindow : Window
         GripText.FontWeight = bare ? FontWeights.Bold : FontWeights.Normal;
         GearText.Foreground = textBrush;
         GearText.Effect = null;
+
+        // v1.11：时钟/日期/监控文字同样跟随自定义颜色（此前漏掉，一直是主题默认色）
+        ClockText.Foreground = textBrush;
+        DateText.Foreground = bare ? textBrush : (Brush)FindResource("TextSecondaryBrush");
+        MonitorLine1.Foreground = bare ? textBrush : (Brush)FindResource("TextSecondaryBrush");
+        MonitorLine2.Foreground = bare ? textBrush : (Brush)FindResource("TextSecondaryBrush");
+        if (bare)
+        {
+            ClockText.FontWeight = FontWeights.Bold;
+            DateText.FontWeight = FontWeights.SemiBold;
+            MonitorLine1.FontWeight = FontWeights.SemiBold;
+            MonitorLine2.FontWeight = FontWeights.SemiBold;
+        }
 
         for (var i = 0; i < GroupButtons.Items.Count; i++)
         {

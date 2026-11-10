@@ -37,7 +37,9 @@ public partial class SettingsWindow : Window
         var settings = vm.Store.Config.Settings;
 
         // 版本号取自程序集，不再写死（v1.1 修正：此前硬编码导致显示落后）
-        VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
+        // v1.11：版本号显示改为 "版本 1.10.0"，避免 "v1.10" 被误读为 "v1.1"
+        var ver = Assembly.GetExecutingAssembly().GetName().Version;
+        VersionText.Text = ver == null ? "版本 ?" : $"版本 {ver.Major}.{ver.Minor}.{ver.Build}";
 
         HotkeyBox.Text = settings.Hotkey;
         AutostartCheck.IsChecked = Autostart.IsEnabled();
