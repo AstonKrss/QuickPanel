@@ -29,6 +29,11 @@ public partial class DockBarWindow : Window
     private bool _plate = true;
     private bool _bare; // v0.9：纯图标模式（整条 Dock 无底无框）
 
+    // v1.9：组件（时钟 + 系统监控）
+    private readonly SystemMonitor _monitor = new();
+    private DispatcherTimer? _widgetTimer;
+    private int _monitorTick;
+
     public DockBarWindow(MainViewModel vm, Action showPanel, Action openSettings)
     {
         InitializeComponent();
@@ -56,7 +61,7 @@ public partial class DockBarWindow : Window
         // F20 v0.7：默认不置顶（只在桌面层级显示），设置可开启
         Topmost = vm.Store.Config.Settings.DockTopmost;
 
-        Loaded += (_, _) => { ApplyLayout(initial: true); RebuildPinVisuals(); };
+        Loaded += (_, _) => { ApplyLayout(initial: true); RebuildPinVisuals(); ApplyWidgets(); };
         SizeChanged += (_, _) => Reposition();
         vm.DockPins.CollectionChanged += OnPinsChanged;
         // ItemsSource 绑定晚于 Loaded 才填充（见 §6.3），以容器生成事件为准重建引用
@@ -217,6 +222,71 @@ public partial class DockBarWindow : Window
 
     /// <summary>F20 v0.8：底板样式切换（带底板/纯图标）。</summary>
     public void ApplyIconPlate() => RebuildPinVisuals();
+
+    // ---------- v1.9：时钟 + 系统监控组件 ----------
+
+    /// <summary>按设置显示/隐藏时钟与监控，并启动/停止定时器。</summary>
+    public void ApplyWidgets()
+    {
+        var s = _vm.Store.Config.Settings;
+        var showClock = s.ShowClock;
+        var showMonitor = s.ShowSystemMonitor;
+
+        WidgetPanel.Visibility = (showClock || showMonitor) ? Visibility.Visible : Visibility.Collapsed;
+        ClockText.Visibility = showClock ? Visibility.Visible : Visibility.Collapsed;
+        DateText.Visibility = showClock ? Visibility.Visible : Visibility.Collapsed;
+        MonitorPanel.Visibility = showMonitor ? Visibility.Visible : Visibility.Collapsed;
+
+        if (!showClock && !showMonitor)
+        {
+            _widgetTimer?.Stop();
+            _widgetTimer = null;
+            return;
+        }
+
+        UpdateWidgets();
+        if (_widgetTimer is null)
+        {
+            _widgetTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromSeconds(1),
+            };
+            _widgetTimer.Tick += (_, _) => UpdateWidgets();
+            _widgetTimer.Start();
+        }
+    }
+
+    private void UpdateWidgets()
+    {
+        try
+        {
+            var s = _vm.Store.Config.Settings;
+            var now = DateTime.Now;
+
+            if (s.ShowClock)
+            {
+                ClockText.Text = s.ClockShowSeconds
+                    ? now.ToString("HH:mm:ss")
+                    : now.ToString("HH:mm");
+                DateText.Text = now.ToString("M月d日 ddd", new System.Globalization.CultureInfo("zh-CN"));
+            }
+
+            if (s.ShowSystemMonitor)
+            {
+                // 监控每 2 秒采样一次（CPU 差分需要间隔）
+                if (_monitorTick++ % 2 == 0)
+                {
+                    _monitor.Update();
+                    MonitorLine1.Text = $"CPU {_monitor.CpuPercent:0}%";
+                    MonitorLine2.Text = $"内存 {_monitor.MemoryPercent:0}% · ↓{FormatNet(_monitor.NetDownKbps)}";
+                }
+            }
+        }
+        catch { /* 组件更新失败不影响 Dock */ }
+    }
+
+    private static string FormatNet(double kbps)
+        => kbps >= 1024 ? $"{kbps / 1024:0.0}M" : $"{kbps:0}K";
 
     /// <summary>F24：实时居中（仅 bottomCenter 模式；自由模式保持用户位置）。</summary>
     private void Reposition()

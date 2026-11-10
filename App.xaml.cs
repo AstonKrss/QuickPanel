@@ -186,6 +186,7 @@ public partial class App : Application
         _dock?.ApplyLayout();
         _dock?.ApplyTopmost();     // v0.7：Dock 置顶开关实时生效
         _dock?.ApplyIconPlate();   // v0.8：图标悬停底板实时生效
+        _dock?.ApplyWidgets();     // v1.9：时钟/监控组件开关
         _panel?.ApplyScale();      // v0.6：面板缩放实时生效
     }
 

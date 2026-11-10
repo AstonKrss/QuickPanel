@@ -29,6 +29,16 @@ public class AppSettings
     /// <summary>v1.7：Dock 是否已播种过。用户清空钉选后不再自动回填。</summary>
     public bool DockSeeded { get; set; }
 
+    // v1.9 组件
+    /// <summary>Dock 左侧显示时钟 + 日期。</summary>
+    public bool ShowClock { get; set; }
+
+    /// <summary>Dock 显示系统监控（CPU/内存/网速）。</summary>
+    public bool ShowSystemMonitor { get; set; }
+
+    /// <summary>是否在时钟上显示秒。</summary>
+    public bool ClockShowSeconds { get; set; }
+
     /// <summary>v0.8：设置窗口主题 dark / light。</summary>
     public string SettingsTheme { get; set; } = "dark";
 

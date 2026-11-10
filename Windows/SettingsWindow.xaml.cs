@@ -60,6 +60,9 @@ public partial class SettingsWindow : Window
         DockTopmostCheck.IsChecked = settings.DockTopmost;
         PlateRadio.IsChecked = settings.DockIconPlate;
         BareRadio.IsChecked = !settings.DockIconPlate;
+        ShowClockCheck.IsChecked = settings.ShowClock;
+        ClockSecondsCheck.IsChecked = settings.ClockShowSeconds;
+        ShowMonitorCheck.IsChecked = settings.ShowSystemMonitor;
         DockTextColorBox.Text = settings.DockTextColor;
         DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
         IconScaleSlider.Value = Math.Clamp(settings.IconScale, 0.6, 1.6);
@@ -296,6 +299,17 @@ public partial class SettingsWindow : Window
     {
         if (_initializing) return;
         _vm.Store.Config.Settings.DockIconPlate = PlateRadio.IsChecked == true;
+        _layoutChanged();
+    }
+
+    /// <summary>v1.9：时钟/监控组件开关。</summary>
+    private void Widget_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        var s = _vm.Store.Config.Settings;
+        s.ShowClock = ShowClockCheck.IsChecked == true;
+        s.ClockShowSeconds = ClockSecondsCheck.IsChecked == true;
+        s.ShowSystemMonitor = ShowMonitorCheck.IsChecked == true;
         _layoutChanged();
     }
 

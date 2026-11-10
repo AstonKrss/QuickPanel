@@ -138,6 +138,27 @@
                 <TextBlock x:Name="GearText" Text="⚙" FontSize="15"
                            Foreground="{DynamicResource TextSecondaryBrush}"/>
             </Border>
+
+            <!-- v1.9：时钟 + 系统监控（可开关） -->
+            <StackPanel x:Name="WidgetPanel" Orientation="Horizontal" VerticalAlignment="Center"
+                        Margin="6,0,0,0" Visibility="Collapsed">
+                <Border Width="1" Margin="4,0" Background="{DynamicResource HairlineBrush}"/>
+                <StackPanel VerticalAlignment="Center" Margin="8,0,4,0">
+                    <TextBlock x:Name="ClockText" Text="00:00" FontSize="14"
+                               FontWeight="SemiBold" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock x:Name="DateText" Text="" FontSize="10"
+                               HorizontalAlignment="Center" Margin="0,1,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </StackPanel>
+                <StackPanel x:Name="MonitorPanel" VerticalAlignment="Center" Margin="6,0,0,0"
+                            Visibility="Collapsed">
+                    <TextBlock x:Name="MonitorLine1" Text="CPU --" FontSize="9.5"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock x:Name="MonitorLine2" Text="内存 --" FontSize="9.5"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </StackPanel>
+            </StackPanel>
             </StackPanel>
         </Grid>
     </Border>

@@ -311,18 +311,27 @@
                             </Grid>
                             <CheckBox x:Name="DockDesktopOnlyCheck" Content="仅在桌面显示（打开其他软件时自动隐藏）"
                                       Margin="0,16,0,0" Click="DockDesktopOnly_Changed"/>
-                            <TextBlock Text="图标大小" Margin="0,16,0,0"/>
-                            <Grid Margin="0,6,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition/>
-                                    <ColumnDefinition Width="48"/>
-                                </Grid.ColumnDefinitions>
-                                <Slider x:Name="IconScaleSlider" Minimum="0.6" Maximum="1.6"
-                                        Value="1.0" TickFrequency="0.05" IsMoveToPointEnabled="True"/>
-                                <TextBlock x:Name="IconScaleText" Grid.Column="1"
-                                           Text="100%" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource SbText}"/>
-                            </Grid>
+                    <TextBlock Text="图标大小" Margin="0,16,0,0"/>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="IconScaleSlider" Minimum="0.6" Maximum="1.6"
+                                Value="1.0" TickFrequency="0.05" IsMoveToPointEnabled="True"/>
+                        <TextBlock x:Name="IconScaleText" Grid.Column="1"
+                                   Text="100%" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource SbText}"/>
+                    </Grid>
+
+                    <!-- v1.9：组件 -->
+                    <TextBlock Text="组件" Margin="0,18,0,0" FontWeight="SemiBold"/>
+                    <CheckBox x:Name="ShowClockCheck" Content="显示时钟与日期" Margin="0,8,0,0"
+                              Click="Widget_Changed"/>
+                    <CheckBox x:Name="ClockSecondsCheck" Content="时钟显示秒" Margin="0,6,0,20"
+                              Click="Widget_Changed"/>
+                    <CheckBox x:Name="ShowMonitorCheck" Content="显示系统监控（CPU / 内存 / 网速）"
+                              Click="Widget_Changed"/>
                         </StackPanel>
                     </Border>
                 </Grid>

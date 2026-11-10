@@ -168,7 +168,17 @@ public class MainViewModel : INotifyPropertyChanged
     // ---------- 条目 ----------
 
     public void LaunchItem(ItemVM item, bool asAdmin = false)
-        => Launcher.Launch(item.Model, asAdmin);
+    {
+        // v1.9：记录使用频率（用于搜索排序）
+        try
+        {
+            item.Model.LaunchCount++;
+            item.Model.LastLaunchTicks = DateTime.UtcNow.Ticks;
+            SaveConfig();
+        }
+        catch { /* 统计失败不影响启动 */ }
+        Launcher.Launch(item.Model, asAdmin);
+    }
 
     /// <summary>F3：拖入文件加入当前分组并立即持久化（v1.7：同目标去重）。</summary>
     public void AddToCurrentGroup(IEnumerable<string> paths)
@@ -327,14 +337,19 @@ public class MainViewModel : INotifyPropertyChanged
         SaveConfig();
     }
 
-    /// <summary>F60 v0.6：跨分组搜索（名称包含匹配，前缀优先）。</summary>
+    /// <summary>
+    /// F60 v0.6：跨分组搜索。
+    /// v1.9：支持拼音首字母（wx→微信）+ 按使用频率/最近使用排序。
+    /// </summary>
     public List<ItemVM> SearchAll(string query)
     {
         var q = query.Trim();
         if (q.Length == 0) return new List<ItemVM>();
         return Groups.SelectMany(g => g.Items)
-            .Where(i => i.Name.Contains(q, StringComparison.OrdinalIgnoreCase))
+            .Where(i => PinyinIndex.Matches(i.Name, q))
             .OrderByDescending(i => i.Name.StartsWith(q, StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(i => i.Model.LaunchCount)          // v1.9：常用优先
+            .ThenByDescending(i => i.Model.LastLaunchTicks)      // v1.9：最近使用优先
             .Take(40)
             .ToList();
     }

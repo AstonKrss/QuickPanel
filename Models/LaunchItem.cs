@@ -27,4 +27,11 @@ public class LaunchItem
 
     /// <summary>图标缓存文件名（icons/ 目录下，目标路径 MD5 键名）。</summary>
     public string IconCache { get; set; } = "";
+
+    // v1.9：使用频率排序
+    /// <summary>累计启动次数。</summary>
+    public int LaunchCount { get; set; }
+
+    /// <summary>最后启动时间（UTC ticks，0 = 从未）。</summary>
+    public long LastLaunchTicks { get; set; }
 }
