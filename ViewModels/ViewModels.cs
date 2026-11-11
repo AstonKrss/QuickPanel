@@ -27,7 +27,33 @@ public class ItemVM : INotifyPropertyChanged
         }
     }
 
-    public ImageSource? Icon { get; }
+    // v1.32：懒加载 —— 此前构造时就解码全部条目的图标（226 个 × 96px ≈ 8MB 常驻），
+    // 而用户一次只会看一个分组；改为首次绑定访问时才提取
+    private ImageSource? _icon;
+    private bool _iconLoaded;
+    private readonly IconCache? _icons;
+
+    public ImageSource? Icon
+    {
+        get
+        {
+            if (!_iconLoaded)
+            {
+                _iconLoaded = true;
+                try { _icon = _icons?.GetIcon(Model); }
+                catch { _icon = null; }
+                OnPropertyChanged();
+            }
+            return _icon;
+        }
+    }
+
+    /// <summary>图标缓存文件变化时调用（当前无就地改图标的入口，防御性保留）。</summary>
+    public void RefreshIcon()
+    {
+        _iconLoaded = false;
+        OnPropertyChanged(nameof(Icon));
+    }
 
     /// <summary>v1.15：目标文件/文件夹不存在（URL 类恒为 false）。界面据此置灰提示。</summary>
     public bool IsMissing
@@ -54,14 +80,8 @@ public class ItemVM : INotifyPropertyChanged
     {
         Model = model;
         _name = model.Name;
-        try
-        {
-            Icon = icons.GetIcon(model);
-        }
-        catch
-        {
-            // 图标提取失败不影响条目本身
-        }
+        _icons = icons;
+        // v1.32：图标改在首次访问时加载（见 Icon 属性）
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

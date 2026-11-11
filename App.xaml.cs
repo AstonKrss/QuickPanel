@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -78,6 +79,7 @@ public partial class App : Application
         _dock = new DockBarWindow(_vm, ShowPanel, OpenSettings);
         _panel.SetDock(_dock);
         _panel.ApplyScale(); // v1.7：启动即应用保存的面板缩放（此前重启后失效）
+        _panel.IsVisibleChanged += Panel_HiddenForTrim; // v1.32：面板收起即整理内存
         _dock.Opacity = _store.Config.Settings.Opacity;
 
         _hotkeys = new HotkeyService();
@@ -134,6 +136,22 @@ public partial class App : Application
         // F42 v0.5 / v1.23：首次运行显示初始化向导（欢迎→扫描勾选→热键→完成）
         if (_store.FirstRun)
             Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(ShowOnboarding));
+
+        // v1.32：内存整理 —— 启动完成一次，之后每 60s 检查（面板隐藏时才执行）
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        {
+            var memTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromSeconds(60),
+            };
+            memTimer.Tick += (_, _) => TrimMemoryIfIdle();
+            memTimer.Start();
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                _lastMemoryTrim = DateTime.MinValue; // 允许启动后立即整理一次
+                TrimMemoryIfIdle();
+            }));
+        }));
     }
 
     /// <summary>v1.23：首次运行初始化向导。</summary>
@@ -156,6 +174,39 @@ public partial class App : Application
             try { OpenSettings(); } catch { /* 忽略 */ }
         }
     }
+
+    // ---- v1.32：常驻内存整理 ----
+
+    [DllImport("kernel32.dll")]
+    private static extern bool SetProcessWorkingSetSize(IntPtr hProcess, IntPtr min, IntPtr max);
+
+    private DateTime _lastMemoryTrim = DateTime.MinValue;
+
+    /// <summary>
+    /// 常驻启动器 99% 时间在闲置：GC 压实 + 把工作集还给系统，
+    /// 让任务管理器里的常驻内存回到真实占用。只在面板隐藏时执行（整理瞬间有 ~100ms 停顿）。
+    /// </summary>
+    private void TrimMemoryIfIdle()
+    {
+        if (_panel is { IsVisible: true }) return;
+        if ((DateTime.Now - _lastMemoryTrim).TotalSeconds < 60) return;
+        _lastMemoryTrim = DateTime.Now;
+        try
+        {
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            SetProcessWorkingSetSize(new IntPtr(-1), new IntPtr(-1), new IntPtr(-1));
+        }
+        catch { /* 整理失败无感，下个周期重试 */ }
+    }
+
+    private void Panel_HiddenForTrim(object? sender, DependencyPropertyChangedEventArgs e)
+        => Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        {
+            _lastMemoryTrim = DateTime.MinValue;
+            TrimMemoryIfIdle();
+        }));
 
     protected override void OnExit(ExitEventArgs e)
     {
