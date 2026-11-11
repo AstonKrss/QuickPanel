@@ -26,6 +26,8 @@ Windows 快捷启动面板 — 分组式启动面板 + 屏幕底部的透明 Doc
 
 一句话：**把桌面和启动这件事收进一个按 `Alt+Q` 就出现的面板，桌面留给你自己。**
 
+> 已知不足、实测基线和版本计划见 [ROADMAP.md](ROADMAP.md)。
+
 ---
 
 ## 特性
@@ -157,7 +159,8 @@ QuickPanel/
 ├─ installer/   install.ps1 · uninstall.ps1 · package.ps1
 ├─ dist/        安装包产物（Setup.exe / standalone / zip）
 ├─ PRD.md       产品需求文档（完整决策记录与踩坑清单）
-└─ TESTING.md   测试手册（97 个用例）
+├─ TESTING.md   测试手册（97 个用例）
+└─ ROADMAP.md   已知不足与未来计划
 ```
 
 ---
