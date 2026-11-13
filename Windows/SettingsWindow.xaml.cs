@@ -40,10 +40,25 @@ public partial class SettingsWindow : Window
 
         // v1.29：混合 DPI 多屏下 WPF 的 CenterScreen 会算到屏幕外（实测 Left=-98），
         // 改为按鼠标所在显示器的工作区手动居中。
+        // v1.36：恢复上次调整的窗口尺寸（限制在屏幕内）
         WindowStartupLocation = WindowStartupLocation.Manual;
         var wa = ScreenHelper.GetWorkAreaAtCursor();
+        if (settings.SettingsWidth >= MinWidth && settings.SettingsHeight >= MinHeight)
+        {
+            Width = Math.Min(settings.SettingsWidth, wa.Width);
+            Height = Math.Min(settings.SettingsHeight, wa.Height);
+        }
         Left = wa.Left + Math.Max(0, (wa.Width - Width) / 2);
         Top = wa.Top + Math.Max(0, (wa.Height - Height) / 2);
+
+        // 拖动边缘/右下角改尺寸 → 记住（RestoreBounds 才是窗口的真实外框）
+        SizeChanged += (_, _) =>
+        {
+            if (WindowState != WindowState.Normal) return;
+            if (ActualWidth < MinWidth || ActualHeight < MinHeight) return;
+            _vm.Store.Config.Settings.SettingsWidth = ActualWidth;
+            _vm.Store.Config.Settings.SettingsHeight = ActualHeight;
+        };
 
         // 版本号取自程序集，不再写死（v1.1 修正：此前硬编码导致显示落后）
         // v1.11：版本号显示改为 "版本 1.10.0"，避免 "v1.10" 被误读为 "v1.1"
@@ -76,6 +91,17 @@ public partial class SettingsWindow : Window
         PlateRadio.IsChecked = settings.DockIconPlate;
         BareRadio.IsChecked = !settings.DockIconPlate;
         ShowClockCheck.IsChecked = settings.ShowClock;
+        // v1.36：桌面卡片
+        DeskClockCheck.IsChecked = settings.DeskClockEnabled;
+        DeskMonitorCheck.IsChecked = settings.DeskMonitorEnabled;
+        DeskGlassRadio.IsChecked = string.Equals(settings.DeskCardStyle, "glass", StringComparison.OrdinalIgnoreCase);
+        DeskLightRadio.IsChecked = string.Equals(settings.DeskCardStyle, "light", StringComparison.OrdinalIgnoreCase);
+        DeskDarkRadio.IsChecked = string.Equals(settings.DeskCardStyle, "dark", StringComparison.OrdinalIgnoreCase);
+        if (DeskGlassRadio.IsChecked != true && DeskLightRadio.IsChecked != true) DeskDarkRadio.IsChecked = true;
+        DeskScaleSlider.Value = Math.Clamp(settings.DeskCardScale, 0.8, 1.8);
+        DeskScaleText.Text = $"{DeskScaleSlider.Value * 100:0}%";
+        DeskWidthSlider.Value = Math.Clamp(settings.DeskCardWidth, 120, 320);
+        DeskWidthText.Text = $"{DeskWidthSlider.Value:0}";
         ClockSecondsCheck.IsChecked = settings.ClockShowSeconds;
         ShowMonitorCheck.IsChecked = settings.ShowSystemMonitor;
         WidgetScaleSlider.Value = Math.Clamp(settings.WidgetScale, 0.7, 1.6);
@@ -262,6 +288,24 @@ public partial class SettingsWindow : Window
             _appearanceChanged();
         };
 
+        // v1.36：桌面卡片交互
+        DeskScaleSlider.ValueChanged += (_, _) =>
+        {
+            var v = Math.Round(DeskScaleSlider.Value, 2);
+            DeskScaleText.Text = $"{v * 100:0}%";
+            if (_initializing) return;
+            settings.DeskCardScale = v;
+            _layoutChanged();
+        };
+        DeskWidthSlider.ValueChanged += (_, _) =>
+        {
+            var v = Math.Round(DeskWidthSlider.Value);
+            DeskWidthText.Text = $"{v:0}";
+            if (_initializing) return;
+            settings.DeskCardWidth = v;
+            _layoutChanged();
+        };
+
         // 初始化时同步滑杆可用性
         HideDelaySlider.IsEnabled = !settings.PanelStayOpen;
         HideDelayText.Opacity = settings.PanelStayOpen ? 0.4 : 1.0;
@@ -393,6 +437,19 @@ public partial class SettingsWindow : Window
     {
         if (_initializing) return;
         _vm.Store.Config.Settings.DockDesktopOnly = DockDesktopOnlyCheck.IsChecked == true;
+    }
+
+    /// <summary>v1.36：桌面卡片开关 / 样式。</summary>
+    private void DeskCard_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        var s = _vm.Store.Config.Settings;
+        s.DeskClockEnabled = DeskClockCheck.IsChecked == true;
+        s.DeskMonitorEnabled = DeskMonitorCheck.IsChecked == true;
+        s.DeskCardStyle = DeskLightRadio.IsChecked == true ? "light"
+            : DeskDarkRadio.IsChecked == true ? "dark"
+            : "glass";
+        _layoutChanged();
     }
 
     /// <summary>v1.31：已运行软件直接切窗口。</summary>

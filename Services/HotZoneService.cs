@@ -208,6 +208,14 @@ public class HotZoneService
                     return;
                 }
 
+                // v1.35：用户正按着左键（多半在从桌面/资源管理器拖文件过来）→ 不收回面板，
+                // 否则刚拖到一半面板就消失，文件无处可放。
+                if (Win32.IsLeftButtonDown())
+                {
+                    ResetOutside();
+                    return;
+                }
+
                 if (_outsideSince == DateTime.MinValue) _outsideSince = DateTime.Now;
                 var delay = HideDelayMs();
                 if (delay <= 0 || (DateTime.Now - _outsideSince).TotalMilliseconds >= delay)

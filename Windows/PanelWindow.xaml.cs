@@ -23,6 +23,9 @@ public partial class PanelWindow : Window
     private bool _transparent;
     private bool _oleDragging;
     private int _suppressHide; // v1.7：子对话框/菜单打开时抑制自动隐藏
+    /// <summary>v1.35：失活时刻左键仍按下（正在拖文件）→ 保持打开，等拖放结束。</summary>
+    private bool _holdOpenUntilDrop;
+    private DispatcherTimer? _dropWatch;
     private readonly Dictionary<Border, Point> _dragAnchors = new();
 
     public PanelWindow(MainViewModel vm)
@@ -45,6 +48,15 @@ public partial class PanelWindow : Window
             if (_suppressHide > 0) return;
             // v1.21：常驻模式 —— 点击其他窗口也不隐藏
             if (_vm.Store.Config.Settings.PanelStayOpen) return;
+            // v1.35：左键仍按着 = 用户正从别处拖文件过来。此刻收回会让面板消失、无处可放，
+            // 这正是"从桌面拖不进面板"的成因。改为保持打开，等拖放结束再判断。
+            if (Win32.IsLeftButtonDown())
+            {
+                _holdOpenUntilDrop = true;
+                StartDropWatch();
+                return;
+            }
+            _holdOpenUntilDrop = false;
             try
             {
                 if (_dock is { IsVisible: true })
@@ -96,6 +108,34 @@ public partial class PanelWindow : Window
             if (level == AcrylicLevel.Solid)
                 RootBorder.Background = (Brush)FindResource("SolidSurfaceBrush");
         };
+    }
+
+    /// <summary>
+    /// v1.35：失活时若左键还按着，说明用户在拖文件；轮询等左键松开。
+    /// 松手后若面板仍可见（拖放没落到面板上），再按正常逻辑收回，
+    /// 避免"拖到一半取消"后 面板一直挂在屏幕上。
+    /// </summary>
+    private void StartDropWatch()
+    {
+        if (_dropWatch is not null) return;
+        _dropWatch = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(150),
+        };
+        _dropWatch.Tick += (_, _) =>
+        {
+            if (Win32.IsLeftButtonDown()) return;
+
+            _dropWatch?.Stop();
+            _dropWatch = null;
+            if (!_holdOpenUntilDrop) return;
+
+            _holdOpenUntilDrop = false;
+            if (!IsVisible || _vm.Store.Config.Settings.PanelStayOpen) return;
+            if (IsActive) return; // 拖放落回面板并重新激活
+            HidePanel();
+        };
+        _dropWatch.Start();
     }
 
     public void SetDock(DockBarWindow dock) => _dock = dock;
@@ -591,9 +631,10 @@ public partial class PanelWindow : Window
 
     private void Root_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        var hasFiles = e.Data.GetDataPresent(DataFormats.FileDrop);
+        e.Effects = hasFiles ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
-        RootBorder.BorderBrush = (Brush)FindResource("AccentBrush");
+        if (hasFiles) RootBorder.BorderBrush = (Brush)FindResource("AccentBrush");
     }
 
     private void Root_DragLeave(object sender, DragEventArgs e)
@@ -601,6 +642,7 @@ public partial class PanelWindow : Window
 
     private void Root_Drop(object sender, DragEventArgs e)
     {
+        _holdOpenUntilDrop = false; // v1.35：拖放结束，恢复正常收回逻辑
         Root_DragLeave(sender, e);
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
             _vm.AddToCurrentGroup(files);

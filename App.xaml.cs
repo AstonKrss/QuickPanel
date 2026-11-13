@@ -21,6 +21,8 @@ public partial class App : Application
     private HotkeyService? _hotkeys;
     private HotZoneService? _hotzone;
     private SettingsWindow? _settings;
+    private DeskCardWindow? _deskClock;
+    private DeskCardWindow? _deskMonitor;
     private WinForms.NotifyIcon? _tray;
     private SD.Icon? _trayIcon;
     private string _currentBackgroundMode = "acrylic";
@@ -105,6 +107,7 @@ public partial class App : Application
 
         _dock.Show();
         MainWindow = _dock;
+        CreateDeskCards(); // v1.36：桌面组件卡片
         _hotzone.Start();
         _guard.StartActivateListener(() => Dispatcher.Invoke(ShowPanel));
 
@@ -219,6 +222,7 @@ public partial class App : Application
         }
         catch { /* 退出期失败忽略 */ }
 
+        try { _deskClock?.Close(); _deskMonitor?.Close(); } catch { }
         _tray?.Dispose();
         _hotzone?.Stop();
         _hotkeys?.Dispose();
@@ -299,6 +303,7 @@ public partial class App : Application
         _dock?.ApplyTopmost();     // v0.7：Dock 置顶开关实时生效
         _dock?.ApplyIconPlate();   // v0.8：图标悬停底板实时生效
         _dock?.ApplyWidgets();     // v1.9：时钟/监控组件开关
+        ApplyDeskCardVisibility(); // v1.36：桌面组件卡片
         _panel?.ApplyScale();      // v0.6：面板缩放实时生效
     }
 
@@ -315,6 +320,7 @@ public partial class App : Application
         _panel.SetDock(_dock);
         _dock.Opacity = _store.Config.Settings.Opacity;
         _panel.ApplyScale();
+        ReloadDeskCards();
 
         if (_hotzone != null)
         {
@@ -325,6 +331,66 @@ public partial class App : Application
         MainWindow = _dock;
         _hotzone?.Start();
         if (wasPanelVisible) _panel.ShowPanel();
+    }
+
+    // ---------- v1.36：桌面组件卡片 ----------
+
+    private void CreateDeskCards()
+    {
+        if (_vm is null || _store is null) return;
+        var s = _store.Config.Settings;
+
+        _deskClock = new DeskCardWindow(_vm, DeskCardWindow.CardKind.Clock);
+        _deskClock.SetOpenSettings(OpenSettings);
+        _deskMonitor = new DeskCardWindow(_vm, DeskCardWindow.CardKind.Monitor);
+        _deskMonitor.SetOpenSettings(OpenSettings);
+        _deskClock._monitorWindow = _deskMonitor;
+
+        // 先显示再按设置决定是否隐藏（保证尺寸测量正确）
+        ApplyDeskCardVisibility();
+    }
+
+    private void ReloadDeskCards()
+    {
+        try { _deskClock?.Close(); } catch { }
+        try { _deskMonitor?.Close(); } catch { }
+        _deskClock = null;
+        _deskMonitor = null;
+        CreateDeskCards();
+    }
+
+    /// <summary>设置变化时调用：开关 / 样式 / 位置。</summary>
+    private void ApplyDeskCardVisibility()
+    {
+        if (_store is null) return;
+        var s = _store.Config.Settings;
+
+        ApplyCard(_deskClock, s.DeskClockEnabled, s.DeskClockX, s.DeskClockY);
+        ApplyCard(_deskMonitor, s.DeskMonitorEnabled, s.DeskClockX,
+            s.DeskClockY + Math.Max(_deskClock?.ActualHeight ?? 120, 120) + 14);
+    }
+
+    private static void ApplyCard(DeskCardWindow? card, bool enabled, double left, double top)
+    {
+        if (card is null) return;
+        if (!enabled)
+        {
+            card.Hide();
+            return;
+        }
+
+        if (!card.IsVisible)
+        {
+            // 先给出位置再 Show：WPF 在 Show 时才应用 Left/Top
+            card.Left = left;
+            card.Top = top;
+            card.Show();
+        }
+        else
+        {
+            // 已显示时不强制改位置（用户可能刚拖过）
+            card.Refresh();
+        }
     }
 
     /// <summary>v1.30：桌面留白开关（托盘快速入口）。</summary>

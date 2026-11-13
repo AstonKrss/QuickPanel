@@ -48,6 +48,27 @@ public class AppSettings
     /// <summary>v1.10：组件（时钟/监控）字体缩放 0.7–1.6，独立于 Dock 图标缩放。</summary>
     public double WidgetScale { get; set; } = 1.0;
 
+    // v1.36：独立桌面组件（浮在桌面上的小卡片，不属于 Dock）
+    /// <summary>显示桌面时钟卡片。</summary>
+    public bool DeskClockEnabled { get; set; }
+
+    /// <summary>显示桌面系统监控卡片。</summary>
+    public bool DeskMonitorEnabled { get; set; }
+
+    /// <summary>桌面卡片位置与大小（DIP，自由摆放）。</summary>
+    public double DeskClockX { get; set; } = 80;
+    public double DeskClockY { get; set; } = 80;
+    public double DeskCardWidth { get; set; } = 168;
+
+    /// <summary>桌面卡片缩放 0.8–1.8。</summary>
+    public double DeskCardScale { get; set; } = 1.0;
+
+    /// <summary>桌面卡片主题：dark / light / glass。</summary>
+    public string DeskCardStyle { get; set; } = "glass";
+
+    /// <summary>卡片是否只在桌面显示（切到其他程序时淡出）。</summary>
+    public bool DeskCardDesktopOnly { get; set; } = true;
+
     // v1.12 Dock 样式细调
     /// <summary>图钉图标尺寸（px，24–64）。</summary>
     public double PinSize { get; set; } = 44;
@@ -66,6 +87,10 @@ public class AppSettings
 
     /// <summary>v0.8：设置窗口主题 dark / light。</summary>
     public string SettingsTheme { get; set; } = "dark";
+
+    /// <summary>v1.36：设置窗口尺寸（用户可拖动调整，下次打开恢复）；0 = 用默认值。</summary>
+    public double SettingsWidth { get; set; }
+    public double SettingsHeight { get; set; }
 
     // v0.5 外观自定义
     /// <summary>背景模式：acrylic（毛玻璃）/ transparent（全透明+自定义底色）/ invisible（完全隐形无底板，v1.1）。</summary>
