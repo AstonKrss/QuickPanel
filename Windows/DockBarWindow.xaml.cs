@@ -632,8 +632,16 @@ public partial class DockBarWindow : Window
 
         // v1.30：只有真的拖动过才切成"自由拖动"并保存 ——
         // 以前单击空白衬垫也会静默改模式，之后窗口不再回到屏幕底部。
-        var moved = Math.Abs(Left - startLeft) > 0.5 || Math.Abs(Top - startTop) > 0.5;
-        if (!moved) return;
+        // v1.34：判定阈值从 0.5 提到 8 DIP —— 手抖/DPI 舍入的小位移不该把模式永久切走，
+        // 一旦切到 free 就再也不会自动回到底部（这正是"重启后 Dock 不在底部"的成因）。
+        var moved = Math.Abs(Left - startLeft) > 8 || Math.Abs(Top - startTop) > 8;
+        if (!moved)
+        {
+            // 没真正拖走：还原起始位置，避免留下 1–2px 的漂移
+            Left = startLeft;
+            Top = startTop;
+            return;
+        }
 
         if (settings.DockPositionMode != "free")
         {
