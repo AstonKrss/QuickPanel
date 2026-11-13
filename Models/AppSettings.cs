@@ -108,8 +108,6 @@ public class AppSettings
     /// <summary>v1.29：面板底板不透明度 0.12–1.0（与底色组合成最终 ARGB）。</summary>
     public double PanelOpacity { get; set; } = 0.94;
 
-    /// <summary>v1.30：隐藏桌面图标（桌面留白，快捷方式仍在桌面文件夹里，可用面板/Dock 访问）。</summary>
-    public bool DesktopIconsHidden { get; set; }
 
     /// <summary>v1.31：目标已在运行时直接切窗口（与任务栏一致，省掉一次进程启动）。</summary>
     public bool ReuseRunningWindow { get; set; } = true;
@@ -117,6 +115,7 @@ public class AppSettings
     // v0.5 Dock 自定义
     /// <summary>位置：bottomCenter（默认）/ free（⠿ 手柄拖动）。</summary>
     public string DockPositionMode { get; set; } = "bottomCenter";
+
 
     public double DockX { get; set; }
     public double DockY { get; set; }

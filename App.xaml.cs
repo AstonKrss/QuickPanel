@@ -111,12 +111,6 @@ public partial class App : Application
         _hotzone.Start();
         _guard.StartActivateListener(() => Dispatcher.Invoke(ShowPanel));
 
-        // v1.30：上次选了"桌面留白"就恢复（只在开启时强制隐藏，不与系统自身设置抢）
-        if (_store.Config.Settings.DesktopIconsHidden)
-        {
-            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle,
-                new Action(() => DesktopIcons.SetHidden(true)));
-        }
 
         // v1.20：预热面板 —— 启动时以 0 透明度显示一次再隐藏，
         // 让 WPF 提前完成首次布局/渲染/字体加载，消除第一次唤出的明显延迟。
@@ -213,14 +207,6 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        // v1.30：退出时把桌面图标还回去 —— "桌面留白"只在 QuickPanel 运行时生效，
-        // 避免用户关掉程序后既看不到图标、又点不了桌面右键（DefView 被隐藏）。
-        try
-        {
-            if (_store?.Config.Settings.DesktopIconsHidden == true)
-                DesktopIcons.SetHidden(false);
-        }
-        catch { /* 退出期失败忽略 */ }
 
         try { _deskClock?.Close(); _deskMonitor?.Close(); } catch { }
         _tray?.Dispose();
@@ -393,19 +379,19 @@ public partial class App : Application
         }
     }
 
-    /// <summary>v1.30：桌面留白开关（托盘快速入口）。</summary>
-    private void ToggleDesktopIcons()
+    /// <summary>
+    /// v1.37：桌面图标显隐交给 Windows 自己 —— 外部程序在 Win11 24H2 上无法可靠切换
+    /// （WM_COMMAND 0x7402 返回成功但不执行、注册表 HideIcons 不重读、移动图标层会被复位）。
+    /// 这里只告诉用户系统自带的位置，避免我们再造一个有坑的开关。
+    /// </summary>
+    private void ShowDesktopIconHint()
     {
-        if (_store is null) return;
-        var target = !DesktopIcons.IsHidden();
-        if (!DesktopIcons.SetHidden(target))
-        {
-            MessageBox.Show("切换桌面图标失败：找不到桌面窗口（Explorer 可能未运行）。",
-                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-        _store.Config.Settings.DesktopIconsHidden = target;
-        _vm?.SaveConfig();
+        MessageBox.Show(
+            "隐藏桌面图标用的是 Windows 自带功能：" + Environment.NewLine + Environment.NewLine +
+            "  在桌面空白处右键 → 查看 → 取消勾选「显示桌面图标」" + Environment.NewLine + Environment.NewLine +
+            "（Windows 11 也可在「设置 → 个性化 → 主题 → 桌面图标设置」里调整）" + Environment.NewLine + Environment.NewLine +
+            "快捷方式不会被删除，随时用同样方式恢复。",
+            "隐藏桌面图标", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void OpenSettings()
@@ -458,9 +444,7 @@ public partial class App : Application
         }
 
         menu.Items.Add(new WinForms.ToolStripSeparator());
-        var desktopToggle = menu.Items.Add("隐藏桌面图标（桌面留白）", null, (_, _) => ToggleDesktopIcons());
-        menu.Opening += (_, _) =>
-            desktopToggle.Text = DesktopIcons.IsHidden() ? "显示桌面图标" : "隐藏桌面图标（桌面留白）";
+        menu.Items.Add("如何隐藏桌面图标…", null, (_, _) => ShowDesktopIconHint());
         menu.Items.Add("备份配置", null, (_, _) =>
         {
             try

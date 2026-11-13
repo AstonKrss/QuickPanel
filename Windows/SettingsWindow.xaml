@@ -219,12 +219,15 @@
                                        Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
                             <CheckBox x:Name="FullscreenHideCheck" Content="全屏时自动隐藏 Dock 与面板（游戏 / F11）" Margin="0,8,0,0"/>
 
-                            <!-- v1.30：桌面留白 -->
-                            <TextBlock Text="桌面" Margin="0,18,0,0" FontWeight="SemiBold"/>
-                            <CheckBox x:Name="HideDesktopIconsCheck" Content="隐藏桌面图标（桌面留白，只留壁纸）"
-                                      Margin="0,8,0,0" Click="HideDesktopIcons_Changed"/>
-                            <TextBlock Text="快捷方式不会被删除，仍在桌面文件夹里；从面板、Dock 或资源管理器都能打开。隐藏期间桌面右键不可用，托盘菜单/这里可随时恢复；退出 QuickPanel 会自动恢复。"
-                                       Margin="0,5,0,0" TextWrapping="Wrap" FontSize="11"/>
+                            <!-- v1.37：桌面图标显隐交给 Windows 原生功能 -->
+                            <TextBlock Text="桌面图标" Margin="0,18,0,0" FontWeight="SemiBold"/>
+                            <TextBlock Text="隐藏桌面图标请用 Windows 自带的方式：桌面空白处右键 → 查看 → 取消勾选「显示桌面图标」。快捷方式不会删除。"
+                                       Margin="0,6,0,0" TextWrapping="Wrap" FontSize="11"/>
+                            <Button Content="打开桌面图标设置" Click="OpenDesktopIconSettings_Click"
+                                    Margin="0,8,0,0" HorizontalAlignment="Left" Padding="12,6"/>
+
+
+                            <!-- v1.31：已运行软件直接切窗口 -->
                             <CheckBox x:Name="ReuseRunningCheck"
                                       Content="已运行的软件直接切到窗口（更快，等同任务栏）"
                                       Margin="0,16,0,0" Click="ReuseRunning_Changed"/>

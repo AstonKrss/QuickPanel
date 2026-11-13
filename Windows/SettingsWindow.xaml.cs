@@ -117,7 +117,6 @@ public partial class SettingsWindow : Window
         HoverScaleText.Text = $"{HoverScaleSlider.Value:0.00}x";
         HoverLiftSlider.Value = Math.Clamp(settings.HoverLift, 0, 20);
         HoverLiftText.Text = $"{HoverLiftSlider.Value:0}";
-        HideDesktopIconsCheck.IsChecked = DesktopIcons.IsHidden();
         ReuseRunningCheck.IsChecked = settings.ReuseRunningWindow;
         DockTextColorBox.Text = settings.DockTextColor;
         DockDesktopOnlyCheck.IsChecked = settings.DockDesktopOnly;
@@ -459,20 +458,22 @@ public partial class SettingsWindow : Window
         _vm.Store.Config.Settings.ReuseRunningWindow = ReuseRunningCheck.IsChecked == true;
     }
 
-    /// <summary>v1.30：桌面留白。只切 Explorer 的显示开关，不动文件。</summary>
-    private void HideDesktopIcons_Changed(object sender, RoutedEventArgs e)
+    /// <summary>v1.37：打开 Windows 自带的"桌面图标设置"。</summary>
+    private void OpenDesktopIconSettings_Click(object sender, RoutedEventArgs e)
     {
-        if (_initializing) return;
-        var want = HideDesktopIconsCheck.IsChecked == true;
-        if (!DesktopIcons.SetHidden(want))
+        try
         {
-            MessageBox.Show("切换桌面图标失败：找不到桌面窗口（Explorer 可能未运行）。",
-                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
-            HideDesktopIconsCheck.IsChecked = DesktopIcons.IsHidden();
-            return;
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "ms-settings:themes",
+                UseShellExecute = true,
+            });
         }
-        _vm.Store.Config.Settings.DesktopIconsHidden = want;
-        _vm.SaveConfig();
+        catch
+        {
+            MessageBox.Show("无法打开系统设置。请手动在桌面空白处右键 → 查看 → 取消勾选「显示桌面图标」。",
+                "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     // ---------- 分区导航（v0.9）----------
@@ -641,6 +642,7 @@ public partial class SettingsWindow : Window
         if (_initializing) return;
         _vm.Store.Config.Settings.DockPositionMode =
             PosFreeRadio.IsChecked == true ? "free" : "bottomCenter";
+
         _layoutChanged();
     }
 

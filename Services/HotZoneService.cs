@@ -236,10 +236,29 @@ public class HotZoneService
         }
     }
 
+    // v1.37：全屏检测结果缓存 —— 之前每 50ms 调一次 SHQueryUserNotificationState（COM 调用），
+    // 常驻时是隐性 CPU 开销。现在最多每 400ms 采样一次，且前台窗口没变就直接复用。
+    private bool _fullscreenCached;
+    private IntPtr _fullscreenHwnd = IntPtr.Zero;
+    private DateTime _fullscreenCheckedAt = DateTime.MinValue;
+
     private bool IsForegroundFullscreen()
     {
         var hwnd = Win32.GetForegroundWindow();
         if (hwnd == IntPtr.Zero) return false;
+
+        // 同一窗口 400ms 内复用结果
+        if (hwnd == _fullscreenHwnd && (DateTime.Now - _fullscreenCheckedAt).TotalMilliseconds < 400)
+            return _fullscreenCached;
+
+        _fullscreenHwnd = hwnd;
+        _fullscreenCheckedAt = DateTime.Now;
+        _fullscreenCached = QueryFullscreen(hwnd);
+        return _fullscreenCached;
+    }
+
+    private bool QueryFullscreen(IntPtr hwnd)
+    {
 
         // F35 v0.5：改用系统通知状态 API 判定（无边框最大化的普通窗口不会再误判）
         // D3D 独占全屏 / 演示模式 → 一定全屏；BUSY（浏览器 F11 等软全屏）→ 结合矩形覆盖确认

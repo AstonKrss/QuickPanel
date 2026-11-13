@@ -14,7 +14,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 混用 WPF+WinForms：DPI 由项目属性统一声明（WFAC010），PerMonitorV2 进程级生效 -->
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <Version>1.36.0</Version>
+    <Version>1.38.0</Version>
     <!-- v1.31：应用图标（exe / 任务栏 / 窗口标题栏） -->
     <ApplicationIcon>Assets\QuickPanel.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
