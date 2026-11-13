@@ -127,6 +127,10 @@ public partial class SettingsWindow : Window
                 _vm.SaveConfig();
             }
             catch { /* 关闭期保存失败不阻塞退出 */ }
+
+            // v1.33：开机自启也在这里兜底（此前只有点「完成」才写，Esc/✕ 会静默丢失）
+            try { Autostart.SetEnabled(AutostartCheck.IsChecked == true); }
+            catch { /* 无权限等场景静默 */ }
         };
         SourceInitialized += (_, _) =>
             Acrylic.ApplyDialogTheme(new WindowInteropHelper(this).Handle, dark: !_isLight);
@@ -313,6 +317,30 @@ public partial class SettingsWindow : Window
 
     /// <summary>v1.31：作者仓库入口。</summary>
     private void GitHub_Click(object sender, MouseButtonEventArgs e) => Links.OpenRepo();
+
+    /// <summary>v1.33：开机自启勾选即时生效，失败回弹复选框并提示原因。</summary>
+    private void Autostart_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        var want = AutostartCheck.IsChecked == true;
+        try
+        {
+            if (!Autostart.SetEnabled(want))
+            {
+                AutostartCheck.IsChecked = Autostart.IsEnabled();
+                MessageBox.Show(want
+                        ? "无法写入开机自启：程序路径不可用或注册表被拒绝。"
+                        : "无法移除开机自启：注册表被拒绝访问。",
+                    "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            AutostartCheck.IsChecked = Autostart.IsEnabled();
+            MessageBox.Show($"开机自启设置失败：{ex.Message}", "QuickPanel",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
 
     private void Swatch_Click(object sender, RoutedEventArgs e)
     {
