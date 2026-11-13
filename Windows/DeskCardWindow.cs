@@ -57,9 +57,9 @@ public class DeskCardWindow : Window
         Topmost = true;
         ShowActivated = false;
         WindowStartupLocation = WindowStartupLocation.Manual;
-        // 高度自适应内容（宽度由设置控制）
+        // 高度自适应内容，宽度由「卡片宽度」设置决定
         SizeToContent = SizeToContent.Height;
-        MinWidth = 168;
+        MinWidth = 150;
         UseLayoutRounding = true;
         SnapsToDevicePixels = true;
 
@@ -254,8 +254,11 @@ public class DeskCardWindow : Window
         _tertiary.Foreground = new SolidColorBrush(sub);
 
         var scale = Math.Clamp(s.DeskCardScale, 0.8, 1.8);
+        UpdateLayout();
         _root.LayoutTransform = new ScaleTransform(scale, scale);
-        _root.MinWidth = Math.Clamp(s.DeskCardWidth, 150, 360);
+        var cardW = Math.Clamp(s.DeskCardWidth, 150, 360);
+        _root.Width = cardW;
+        Width = cardW;
     }
 
     private void Update()
