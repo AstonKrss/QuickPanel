@@ -91,17 +91,6 @@ public partial class SettingsWindow : Window
         PlateRadio.IsChecked = settings.DockIconPlate;
         BareRadio.IsChecked = !settings.DockIconPlate;
         ShowClockCheck.IsChecked = settings.ShowClock;
-        // v1.36：桌面卡片
-        DeskClockCheck.IsChecked = settings.DeskClockEnabled;
-        DeskMonitorCheck.IsChecked = settings.DeskMonitorEnabled;
-        DeskGlassRadio.IsChecked = string.Equals(settings.DeskCardStyle, "glass", StringComparison.OrdinalIgnoreCase);
-        DeskLightRadio.IsChecked = string.Equals(settings.DeskCardStyle, "light", StringComparison.OrdinalIgnoreCase);
-        DeskDarkRadio.IsChecked = string.Equals(settings.DeskCardStyle, "dark", StringComparison.OrdinalIgnoreCase);
-        if (DeskGlassRadio.IsChecked != true && DeskLightRadio.IsChecked != true) DeskDarkRadio.IsChecked = true;
-        DeskScaleSlider.Value = Math.Clamp(settings.DeskCardScale, 0.8, 1.8);
-        DeskScaleText.Text = $"{DeskScaleSlider.Value * 100:0}%";
-        DeskWidthSlider.Value = Math.Clamp(settings.DeskCardWidth, 120, 320);
-        DeskWidthText.Text = $"{DeskWidthSlider.Value:0}";
         ClockSecondsCheck.IsChecked = settings.ClockShowSeconds;
         ShowMonitorCheck.IsChecked = settings.ShowSystemMonitor;
         WidgetScaleSlider.Value = Math.Clamp(settings.WidgetScale, 0.7, 1.6);
@@ -287,24 +276,6 @@ public partial class SettingsWindow : Window
             _appearanceChanged();
         };
 
-        // v1.36：桌面卡片交互
-        DeskScaleSlider.ValueChanged += (_, _) =>
-        {
-            var v = Math.Round(DeskScaleSlider.Value, 2);
-            DeskScaleText.Text = $"{v * 100:0}%";
-            if (_initializing) return;
-            settings.DeskCardScale = v;
-            _layoutChanged();
-        };
-        DeskWidthSlider.ValueChanged += (_, _) =>
-        {
-            var v = Math.Round(DeskWidthSlider.Value);
-            DeskWidthText.Text = $"{v:0}";
-            if (_initializing) return;
-            settings.DeskCardWidth = v;
-            _layoutChanged();
-        };
-
         // 初始化时同步滑杆可用性
         HideDelaySlider.IsEnabled = !settings.PanelStayOpen;
         HideDelayText.Opacity = settings.PanelStayOpen ? 0.4 : 1.0;
@@ -438,26 +409,6 @@ public partial class SettingsWindow : Window
         _vm.Store.Config.Settings.DockDesktopOnly = DockDesktopOnlyCheck.IsChecked == true;
     }
 
-    /// <summary>v1.36：桌面卡片开关 / 样式。</summary>
-    private void DeskCard_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_initializing) return;
-        var s = _vm.Store.Config.Settings;
-        s.DeskClockEnabled = DeskClockCheck.IsChecked == true;
-        s.DeskMonitorEnabled = DeskMonitorCheck.IsChecked == true;
-        s.DeskCardStyle = DeskLightRadio.IsChecked == true ? "light"
-            : DeskDarkRadio.IsChecked == true ? "dark"
-            : "glass";
-        _layoutChanged();
-    }
-
-    /// <summary>v1.31：已运行软件直接切窗口。</summary>
-    private void ReuseRunning_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_initializing) return;
-        _vm.Store.Config.Settings.ReuseRunningWindow = ReuseRunningCheck.IsChecked == true;
-    }
-
     /// <summary>v1.37：打开 Windows 自带的"桌面图标设置"。</summary>
     private void OpenDesktopIconSettings_Click(object sender, RoutedEventArgs e)
     {
@@ -474,6 +425,13 @@ public partial class SettingsWindow : Window
             MessageBox.Show("无法打开系统设置。请手动在桌面空白处右键 → 查看 → 取消勾选「显示桌面图标」。",
                 "QuickPanel", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+    }
+
+    /// <summary>v1.31：已运行软件直接切窗口。</summary>
+    private void ReuseRunning_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        _vm.Store.Config.Settings.ReuseRunningWindow = ReuseRunningCheck.IsChecked == true;
     }
 
     // ---------- 分区导航（v0.9）----------
