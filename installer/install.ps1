@@ -9,11 +9,17 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+try {
 $AppName = 'QuickPanel'
 $InstallDir = Join-Path $env:LOCALAPPDATA $AppName
 $SourceExe = Join-Path $PSScriptRoot 'QuickPanel.exe'
 
-function Say($msg, $color = 'Gray') { if (-not $Quiet) { Write-Host $msg -ForegroundColor $color } }
+function Say($msg, $color = 'Gray') { Write-Host $msg -ForegroundColor $color }
+$LogPath = Join-Path $env:TEMP 'QuickPanel-install.log'
+function Log($msg) { try { Add-Content -Path $LogPath -Value ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $msg) -Encoding UTF8 } catch {} }
+Log "=== install start ==="
+Log "InstallDir=$InstallDir"
+Log "SourceExe=$SourceExe exists=$(Test-Path $SourceExe)"
 
 Say "=== $AppName 安装程序 ===" 'Cyan'
 Say ""
@@ -113,10 +119,27 @@ Say "=== 安装完成 ===" Green
 Say "  安装位置: $InstallDir"
 Say "  卸载方式: 设置 → 应用 → QuickPanel → 卸载"
 Say "  或运行:   $InstallDir\uninstall.ps1"
+Log "=== install OK ==="
 
 if ($Quiet) {
     Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.MessageBox]::Show(
         "QuickPanel 已安装到：`n$InstallDir`n`n已创建桌面与开始菜单快捷方式，并设置为开机启动。`n可以在「设置」里关闭开机启动。",
         "QuickPanel 安装完成", 'OK', 'Information') | Out-Null
+}
+
+} catch {
+    # v1.40：任何一步失败都弹可见的错误框 + 写日志，不再无声无息
+    Say "" 'Gray'
+    Say ("安装失败：{0}" -f $_.Exception.Message) 'Red'
+    Say ("详细日志：{0}" -f $LogPath) 'Yellow'
+    Log ("ERROR: " + $_.Exception.Message)
+    Log $_.ScriptStackTrace
+    if ($Quiet) {
+        Add-Type -AssemblyName System.Windows.Forms
+        [System.Windows.Forms.MessageBox]::Show(
+            ("安装失败：{0}`n`n详细日志：{1}`n`n请把日志文件发给开发者。" -f $_.Exception.Message, $LogPath),
+            "QuickPanel 安装失败", 'OK', 'Error') | Out-Null
+    }
+    exit 1
 }
